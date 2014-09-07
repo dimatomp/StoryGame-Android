@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Game Challenge Android App</string>
+    <string name="username_prompt">Username</string>
+    <string name="login_button">Login</string>
+    <string name="logging_in">Logging in, please wait…</string>
+
+    <string name="error_bad_server_address">Login failure: bad server address</string>
+    <string name="error_json_exception_send">Failed to send a message to the server</string>
+    <string name="error_check_connection">Failed to connect to server: check your Internet connection</string>
+
+</resources>
