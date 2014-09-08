@@ -33,6 +33,14 @@ public class ServerConnectionHandler extends Service {
 
     enum ConnectionStatus {JOINING_IN, FAILED_TO_JOIN, SUCCESS}
 
+    @Override
+    public void onDestroy() {
+        if (socket != null)
+            socket.disconnect();
+        Log.v(TAG, "Service instance destroyed");
+        super.onDestroy();
+    }
+
     public class ServerConnectionBinder extends Binder {
         private ConnectionStatus connectionStatus;
 
