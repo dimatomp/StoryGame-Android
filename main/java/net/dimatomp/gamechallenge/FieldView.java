@@ -146,7 +146,7 @@ public class FieldView extends View {
         }
     }
 
-    private ScheduledExecutorService executorService = Executors.newScheduledThreadPool(1);
+    private ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {

@@ -32,8 +32,8 @@ public class ServerConnectionHandler extends Service {
 
     private static final String TAG = "ServerConnectionHandler";
     private static final IO.Options options = new IO.Options() {{
-        reconnectionAttempts = 6;
-        reconnectionDelay = 10000;
+        reconnectionAttempts = 5;
+        reconnectionDelay = 4000;
         forceNew = true;
     }};
 
@@ -57,6 +57,7 @@ public class ServerConnectionHandler extends Service {
                     loginForm.showError(res);
                 }
             });
+            stopSelf();
         }
 
         public void logIn(final LoginForm form, String serverAddress, final String userName) {
@@ -88,24 +89,22 @@ public class ServerConnectionHandler extends Service {
                         } else {
                             connectionStatus = ConnectionStatus.FAILED_TO_JOIN;
                             showLoginErrorMessage(form, R.string.error_server_refused);
-                            stopSelf();
                         }
                     } catch (JSONException exception) {
                         connectionStatus = ConnectionStatus.FAILED_TO_JOIN;
                         showLoginErrorMessage(form, R.string.error_json_exception_receive);
-                        stopSelf();
                     }
                 }
             }).once(Socket.EVENT_CONNECT, new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
+                    Log.i(TAG, "Connected to the server, sending join request.");
                     if (connectionStatus == ConnectionStatus.JOINING_IN) {
                         try {
                             socket.emit("join_request", new JSONObject().put("userName", userName));
                         } catch (JSONException e) {
                             connectionStatus = ConnectionStatus.FAILED_TO_JOIN;
                             showLoginErrorMessage(form, R.string.error_json_exception_send);
-                            stopSelf();
                         }
                     }
                 }
@@ -115,7 +114,6 @@ public class ServerConnectionHandler extends Service {
                     if (connectionStatus == ConnectionStatus.JOINING_IN) {
                         connectionStatus = ConnectionStatus.FAILED_TO_JOIN;
                         showLoginErrorMessage(form, R.string.error_check_connection);
-                        stopSelf();
                     }
                 }
             }).once(Socket.EVENT_CONNECT_TIMEOUT, new Emitter.Listener() {
@@ -124,7 +122,6 @@ public class ServerConnectionHandler extends Service {
                     if (connectionStatus == ConnectionStatus.JOINING_IN) {
                         connectionStatus = ConnectionStatus.FAILED_TO_JOIN;
                         showLoginErrorMessage(form, R.string.error_connection_timeout);
-                        stopSelf();
                     }
                 }
             }).on(Socket.EVENT_DISCONNECT, new Emitter.Listener() {

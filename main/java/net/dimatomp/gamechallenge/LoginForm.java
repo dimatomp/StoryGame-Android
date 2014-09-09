@@ -3,6 +3,7 @@ package net.dimatomp.gamechallenge;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
@@ -21,8 +22,20 @@ public class LoginForm extends Activity {
 
     ProgressDialog dialog;
 
+    private void unbindTheService() {
+        if (connection != null) {
+            unbindService(connection);
+            connection = null;
+        }
+    }
+
     public void tryLogin(View view) {
-        dialog = ProgressDialog.show(this, "", getString(R.string.logging_in));
+        dialog = ProgressDialog.show(this, "", getString(R.string.logging_in), false, true, new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                unbindTheService();
+            }
+        });
         String userName = ((TextView) findViewById(R.id.usernamePrompt)).getText().toString();
         connection = new HandlerConnection(userName);
         if (!bindService(new Intent(this, ServerConnectionHandler.class), connection, BIND_AUTO_CREATE)) {
@@ -32,23 +45,18 @@ public class LoginForm extends Activity {
     }
 
     public void startGame() {
-        dialog.cancel();
+        dialog.dismiss();
         startActivity(new Intent(this, GameField.class));
     }
 
     public void showError(int res) {
         dialog.cancel();
         Toast.makeText(this, res, Toast.LENGTH_LONG).show();
-        unbindService(connection);
-        connection = null;
     }
 
     @Override
     protected void onDestroy() {
-        if (connection != null) {
-            unbindService(connection);
-            connection = null;
-        }
+        unbindTheService();
         super.onDestroy();
     }
 
@@ -67,7 +75,7 @@ public class LoginForm extends Activity {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             this.service = (ServerConnectionHandler.ServerConnectionBinder) service;
-            this.service.logIn(LoginForm.this, "http://192.168.1.4:9092", userName);
+            this.service.logIn(LoginForm.this, "http://ctddev.ifmo.ru:9092", userName);
         }
 
         @Override
