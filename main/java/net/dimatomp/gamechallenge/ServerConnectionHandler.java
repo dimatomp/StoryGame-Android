@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
+import android.widget.Toast;
 import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
@@ -16,6 +17,11 @@ import java.net.URISyntaxException;
 public class ServerConnectionHandler extends Service {
     Socket socket;
     JSONObject startInfo;
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        return START_STICKY;
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -99,7 +105,6 @@ public class ServerConnectionHandler extends Service {
                         } catch (JSONException e) {
                             connectionStatus = ConnectionStatus.FAILED_TO_JOIN;
                             showLoginErrorMessage(form, R.string.error_json_exception_send);
-                            socket.disconnect();
                             stopSelf();
                         }
                     }
@@ -131,6 +136,34 @@ public class ServerConnectionHandler extends Service {
             });
 
             socket.connect();
+        }
+
+        public void setGameField(final GameField field) {
+            socket.listeners("move_response").clear();
+            socket.listeners("vote_information").clear();
+            socket.listeners("vote_result").clear();
+            socket.listeners("new_vote").clear();
+
+            socket.on("move_response", new Emitter.Listener() {
+                @Override
+                public void call(final Object... args) {
+                    field.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            field.handleMoveResponse((JSONObject) args[0]);
+                        }
+                    });
+                }
+            });
+        }
+
+        public boolean sendMoveRequest(int direction) {
+            try {
+                socket.emit("move_request", new JSONObject().put("direction", direction));
+            } catch (JSONException e) {
+                return false;
+            }
+            return true;
         }
 
         public JSONObject getStartInfo() { // TODO Add an activity as a parameter

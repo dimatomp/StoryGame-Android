@@ -33,16 +33,23 @@ public class LoginForm extends Activity {
 
     public void startGame() {
         dialog.cancel();
-        // Dummy implementation
-        Toast.makeText(this, "Connected and joined successfully!", Toast.LENGTH_SHORT).show();
-        unbindService(connection);
-        stopService(new Intent(this, ServerConnectionHandler.class));
+        startActivity(new Intent(this, GameField.class));
     }
 
     public void showError(int res) {
         dialog.cancel();
         Toast.makeText(this, res, Toast.LENGTH_LONG).show();
         unbindService(connection);
+        connection = null;
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (connection != null) {
+            unbindService(connection);
+            connection = null;
+        }
+        super.onDestroy();
     }
 
     private static final String TAG = "LoginForm";
@@ -60,7 +67,7 @@ public class LoginForm extends Activity {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             this.service = (ServerConnectionHandler.ServerConnectionBinder) service;
-            this.service.logIn(LoginForm.this, "http://ctddev.ifmo.ru:9092", userName);
+            this.service.logIn(LoginForm.this, "http://192.168.1.4:9092", userName);
         }
 
         @Override
