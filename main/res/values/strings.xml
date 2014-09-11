@@ -13,5 +13,6 @@
     <string name="error_connection_timeout">Login failure: connection timeout</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="server_address_prompt">Server address</string>
 
 </resources>

@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.Toast;
 import com.github.nkzawa.emitter.Emitter;
 import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
@@ -15,8 +14,15 @@ import org.json.JSONObject;
 import java.net.URISyntaxException;
 
 public class ServerConnectionHandler extends Service {
+    private static final String TAG = "ServerConnectionHandler";
+    private static final IO.Options options = new IO.Options() {{
+        reconnectionAttempts = 5;
+        reconnectionDelay = 4000;
+        forceNew = true;
+    }};
     Socket socket;
     JSONObject startInfo;
+    private ServerConnectionBinder connectionBinder = new ServerConnectionBinder();
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -28,17 +34,6 @@ public class ServerConnectionHandler extends Service {
         return connectionBinder;
     }
 
-    private ServerConnectionBinder connectionBinder = new ServerConnectionBinder();
-
-    private static final String TAG = "ServerConnectionHandler";
-    private static final IO.Options options = new IO.Options() {{
-        reconnectionAttempts = 5;
-        reconnectionDelay = 4000;
-        forceNew = true;
-    }};
-
-    enum ConnectionStatus {JOINING_IN, FAILED_TO_JOIN, SUCCESS}
-
     @Override
     public void onDestroy() {
         if (socket != null)
@@ -46,6 +41,8 @@ public class ServerConnectionHandler extends Service {
         Log.v(TAG, "Service instance destroyed");
         super.onDestroy();
     }
+
+    enum ConnectionStatus {JOINING_IN, FAILED_TO_JOIN, SUCCESS}
 
     public class ServerConnectionBinder extends Binder {
         private ConnectionStatus connectionStatus;

@@ -14,13 +14,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class LoginForm extends Activity {
+    private static final String TAG = "LoginForm";
+    ProgressDialog dialog;
+    private HandlerConnection connection;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login_form);
     }
-
-    ProgressDialog dialog;
 
     private void unbindTheService() {
         if (connection != null) {
@@ -37,7 +39,9 @@ public class LoginForm extends Activity {
             }
         });
         String userName = ((TextView) findViewById(R.id.usernamePrompt)).getText().toString();
-        connection = new HandlerConnection(userName);
+        String serverAddress = ((TextView) findViewById(R.id.serverAddressPrompt)).getText().toString();
+        unbindTheService();
+        connection = new HandlerConnection(userName, serverAddress);
         if (!bindService(new Intent(this, ServerConnectionHandler.class), connection, BIND_AUTO_CREATE)) {
             connection = null;
             Log.e(TAG, "Failed to bind to the connection handler");
@@ -60,22 +64,19 @@ public class LoginForm extends Activity {
         super.onDestroy();
     }
 
-    private static final String TAG = "LoginForm";
-
-    private HandlerConnection connection;
-
     class HandlerConnection implements ServiceConnection {
-        final String userName;
+        final String userName, serverAddress;
         ServerConnectionHandler.ServerConnectionBinder service;
 
-        HandlerConnection(String userName) {
+        HandlerConnection(String userName, String serverAddress) {
             this.userName = userName;
+            this.serverAddress = serverAddress;
         }
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             this.service = (ServerConnectionHandler.ServerConnectionBinder) service;
-            this.service.logIn(LoginForm.this, "http://ctddev.ifmo.ru:9092", userName);
+            this.service.logIn(LoginForm.this, serverAddress, userName);
         }
 
         @Override
