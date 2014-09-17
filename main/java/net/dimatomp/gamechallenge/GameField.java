@@ -21,7 +21,6 @@ import android.widget.CursorAdapter;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.NumberPicker;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TabHost;
 import android.widget.TabWidget;
@@ -34,7 +33,7 @@ import static net.dimatomp.gamechallenge.PollDatabaseColumns.TITLE;
 public class GameField extends Activity implements AdapterView.OnItemClickListener {
     private static final String TAG = "GameField";
     private static final String SAVED_INSTANCE_FIELD = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_FIELD";
-    private static final String SAVED_INSTANCE_DIALOG_SHOWN = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_DIALOG_SHOWN";
+    private static final String SAVED_INSTANCE_DIALOG = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_DIALOG";
     FieldView field;
     boolean justStarted;
     SimpleCursorAdapter pollListAdapter;
@@ -89,51 +88,14 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         args.putString(PollLoaderCallbacks.ARG_POLL_NAME, ((TextView) view).getText().toString());
         getLoaderManager().restartLoader(1, args, pollLoaderCallbacks);
 
-        // TODO handle orientation change properly
-        View theView = getDialogView();
-
-        createDialog(theView);
+        // TODO Manage minimum values in MoneyPicker
+        createDialog(getDialogView());
         showDialog();
     }
 
     private View getDialogView() {
         View theView = getLayoutInflater().inflate(R.layout.voting_dialog, null);
         ((AdapterRadioGroup) theView.findViewById(R.id.poll_choices)).setAdapter(pollChoicesAdapter);
-        final NumberPicker amountInvested = (NumberPicker) theView.findViewById(R.id.amount_invested);
-        amountInvested.setMinValue(0);
-        amountInvested.setMaxValue(11);
-        amountInvested.setWrapSelectorWheel(false);
-        amountInvested.setOnValueChangedListener(new NumberPicker.OnValueChangeListener() {
-            final String[] values = new String[12];
-            int numberPickerStep = 1;
-
-            {
-                updateValues();
-                amountInvested.setDisplayedValues(values);
-            }
-
-            private void updateValues() {
-                values[0] = Integer.toString(numberPickerStep / 10 * 9);
-                for (int i = 1; i <= 10; i++)
-                    values[i] = Integer.toString(numberPickerStep * i);
-                values[11] = Integer.toString(numberPickerStep * 20);
-            }
-
-            @Override
-            public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
-                if (newVal == picker.getMaxValue()) {
-                    if (numberPickerStep * 10 < Integer.MAX_VALUE / 10) {
-                        numberPickerStep *= 10;
-                        updateValues();
-                        picker.setValue(2);
-                    }
-                } else if (newVal == picker.getMinValue() && numberPickerStep > 1) {
-                    numberPickerStep /= 10;
-                    updateValues();
-                    picker.setValue(picker.getMaxValue() - 2);
-                }
-            }
-        });
         return theView;
     }
 
@@ -192,11 +154,13 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         setupVoteDialog();
 
         field = (FieldView) findViewById(R.id.fieldView);
-        if (savedInstanceState != null && savedInstanceState.containsKey(SAVED_INSTANCE_FIELD)) {
+        if (savedInstanceState != null) {
             field.setField((int[][]) savedInstanceState.getSerializable(SAVED_INSTANCE_FIELD), false);
-            dialogShown = savedInstanceState.getBoolean(SAVED_INSTANCE_DIALOG_SHOWN);
-            pollChoiceDialog = pollChoiceDialogBuilder.setView(getDialogView()).create();
-            pollChoiceDialog.onRestoreInstanceState(savedInstanceState);
+            dialogShown = savedInstanceState.containsKey(SAVED_INSTANCE_DIALOG);
+            if (dialogShown) {
+                pollChoiceDialog = pollChoiceDialogBuilder.setView(getDialogView()).create();
+                pollChoiceDialog.onRestoreInstanceState(savedInstanceState.getBundle(SAVED_INSTANCE_DIALOG));
+            }
             justStarted = false;
         } else
             justStarted = true;
@@ -220,7 +184,8 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putSerializable(SAVED_INSTANCE_FIELD, field.getField());
-        outState.putBoolean(SAVED_INSTANCE_DIALOG_SHOWN, dialogShown);
+        if (dialogShown)
+            outState.putBundle(SAVED_INSTANCE_DIALOG, pollChoiceDialog.onSaveInstanceState());
     }
 
     @Override

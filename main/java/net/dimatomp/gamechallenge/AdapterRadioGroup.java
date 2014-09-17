@@ -2,6 +2,8 @@ package net.dimatomp.gamechallenge;
 
 import android.content.Context;
 import android.database.DataSetObserver;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.AdapterView;
@@ -29,6 +31,7 @@ public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements Che
             removeAllViewsInLayout();
         }
     };
+
     private RadioButton selectedView;
 
     public AdapterRadioGroup(Context context) {
@@ -71,23 +74,25 @@ public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements Che
 
     private void updateChildren() {
         if (getChildCount() == 0) {
-            int selView = -1;
-            int minWidth = 0;
-            int minHeight = 0;
             for (int i = 0; i < adapter.getCount(); i++) {
                 View newChild = adapter.getView(i, null, this);
-                if (((RadioButton) newChild).isChecked())
-                    selView = i;
                 ((RadioButton) newChild).setOnCheckedChangeListener(this);
                 addAndMeasureChild(newChild);
-                minWidth = Math.max(minWidth, newChild.getMeasuredWidth());
-                minHeight += newChild.getMeasuredHeight();
             }
-            setMinimumWidth(minWidth);
-            setMinimumHeight(minHeight);
-            if (selView != -1)
-                setSelection(selView);
         }
+        int selView = -1;
+        int minWidth = 0;
+        int minHeight = 0;
+        for (int i = 0; i < getChildCount(); i++) {
+            minWidth = Math.max(minWidth, getChildAt(i).getMeasuredWidth());
+            minHeight += getChildAt(i).getMeasuredHeight();
+            if (((RadioButton) getChildAt(i)).isChecked())
+                selView = i;
+        }
+        if (selView != -1)
+            setSelection(selView);
+        setMinimumWidth(minWidth);
+        setMinimumHeight(minHeight);
     }
 
     @Override
@@ -117,6 +122,70 @@ public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements Che
             for (int i = 0; i < getChildCount(); i++)
                 if (getChildAt(i) != selectedView)
                     getChildAt(i).setEnabled(false);
+        }
+    }
+
+    @Override
+    protected Parcelable onSaveInstanceState() {
+        super.onSaveInstanceState();
+        String[] texts = new String[getChildCount()];
+        boolean[] checked = new boolean[getChildCount()];
+        for (int i = 0; i < getChildCount(); i++) {
+            texts[i] = ((RadioButton) getChildAt(i)).getText().toString();
+            checked[i] = ((RadioButton) getChildAt(i)).isChecked();
+        }
+        return new SavedInstanceState(texts, checked);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        super.onRestoreInstanceState(null);
+        SavedInstanceState savedInstanceState = (SavedInstanceState) state;
+        for (int i = 0; i < savedInstanceState.texts.length; i++) {
+            RadioButton button = new RadioButton(getContext());
+            button.setText(savedInstanceState.texts[i]);
+            button.setChecked(savedInstanceState.checked[i]);
+            button.setOnCheckedChangeListener(this);
+            addAndMeasureChild(button);
+        }
+        updateChildren();
+    }
+
+    static class SavedInstanceState implements Parcelable {
+
+        public static final Creator<SavedInstanceState> CREATOR = new Creator<SavedInstanceState>() {
+            @Override
+            public SavedInstanceState createFromParcel(Parcel source) {
+                String[] texts = new String[source.readInt()];
+                source.readStringArray(texts);
+                boolean[] checked = new boolean[texts.length];
+                source.readBooleanArray(checked);
+                return new SavedInstanceState(texts, checked);
+            }
+
+            @Override
+            public SavedInstanceState[] newArray(int size) {
+                return new SavedInstanceState[size];
+            }
+        };
+        final String[] texts;
+        final boolean[] checked;
+
+        SavedInstanceState(String[] texts, boolean[] checked) {
+            this.texts = texts;
+            this.checked = checked;
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeInt(texts.length);
+            dest.writeStringArray(texts);
+            dest.writeBooleanArray(checked);
         }
     }
 }
