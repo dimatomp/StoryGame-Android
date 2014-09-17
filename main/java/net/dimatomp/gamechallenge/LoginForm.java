@@ -3,7 +3,6 @@ package net.dimatomp.gamechallenge;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ComponentName;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
@@ -16,36 +15,20 @@ import android.widget.Toast;
 public class LoginForm extends Activity {
     private static final String TAG = "LoginForm";
     ProgressDialog dialog;
-    private HandlerConnection connection;
+    private HandlerConnection connection = new HandlerConnection();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login_form);
-    }
-
-    private void unbindTheService() {
-        if (connection != null) {
-            unbindService(connection);
-            connection = null;
-        }
+        bindService(new Intent(this, ServerConnectionHandler.class), connection, BIND_AUTO_CREATE);
     }
 
     public void tryLogin(View view) {
-        dialog = ProgressDialog.show(this, "", getString(R.string.logging_in), false, true, new DialogInterface.OnCancelListener() {
-            @Override
-            public void onCancel(DialogInterface dialog) {
-                unbindTheService();
-            }
-        });
+        dialog = ProgressDialog.show(this, "", getString(R.string.logging_in), false, true);
         String userName = ((TextView) findViewById(R.id.usernamePrompt)).getText().toString();
         String serverAddress = ((TextView) findViewById(R.id.serverAddressPrompt)).getText().toString();
-        unbindTheService();
-        connection = new HandlerConnection(userName, serverAddress);
-        if (!bindService(new Intent(this, ServerConnectionHandler.class), connection, BIND_AUTO_CREATE)) {
-            connection = null;
-            Log.e(TAG, "Failed to bind to the connection handler");
-        }
+        connection.logIn(serverAddress, userName);
     }
 
     public void startGame() {
@@ -59,29 +42,36 @@ public class LoginForm extends Activity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        PollDatabase.dropEverything(this);
+    }
+
+    @Override
     protected void onDestroy() {
-        unbindTheService();
+        unbindService(connection);
         super.onDestroy();
     }
 
     class HandlerConnection implements ServiceConnection {
-        final String userName, serverAddress;
         ServerConnectionHandler.ServerConnectionBinder service;
-
-        HandlerConnection(String userName, String serverAddress) {
-            this.userName = userName;
-            this.serverAddress = serverAddress;
-        }
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             this.service = (ServerConnectionHandler.ServerConnectionBinder) service;
-            this.service.logIn(LoginForm.this, serverAddress, userName);
+            this.service.setLoginForm(LoginForm.this);
+            if (this.service.isConnecting())
+                dialog = ProgressDialog.show(LoginForm.this, "", getString(R.string.logging_in), false, true);
+        }
+
+        public void logIn(String serverAddress, String userName) {
+            service.logIn(serverAddress, userName);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             Log.w(TAG, "Socket.io session service disconnected");
+            service.setLoginForm(null);
         }
     }
 }

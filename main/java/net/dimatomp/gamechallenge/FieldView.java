@@ -2,11 +2,18 @@ package net.dimatomp.gamechallenge;
 
 import android.content.Context;
 import android.content.res.Configuration;
-import android.graphics.*;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.LevelListDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.PathShape;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -35,13 +42,30 @@ public class FieldView extends View {
 
     public FieldView(Context context) {
         super(context);
+        initArrow();
+    }
+
+    public FieldView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        initArrow();
+    }
+
+    public FieldView(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
+        initArrow();
+    }
+
+    private void initArrow() {
+        arrow = ((BitmapDrawable) getResources().getDrawable(R.drawable.arrow)).getBitmap();
+        arrowPaint = new Paint();
+        arrowPaint.setAlpha(127);
     }
 
     private void loadTileImages(int sideLength) {
         if (sideLength == 0)
             return;
         this.sideLength = sideLength;
-        tiles = new Bitmap[] {
+        tiles = new Bitmap[]{
                 ((BitmapDrawable) getResources().getDrawable(R.drawable.ground0)).getBitmap(),
                 ((BitmapDrawable) getResources().getDrawable(R.drawable.ground1)).getBitmap(),
                 ((BitmapDrawable) getResources().getDrawable(R.drawable.ground2)).getBitmap()
@@ -65,9 +89,6 @@ public class FieldView extends View {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         setField(field, true);
-        arrow = ((BitmapDrawable) getResources().getDrawable(R.drawable.arrow)).getBitmap();
-        arrowPaint = new Paint();
-        arrowPaint.setAlpha(127);
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)
             updateRects();
         else
@@ -75,6 +96,8 @@ public class FieldView extends View {
     }
 
     public void updateArrow() {
+        if (portraitArrow != null)
+            return;
         fingerDelta = getResources().getDimension(R.dimen.portrait_finger_move_delta);
         portraitArrow = new LevelListDrawable();
 
@@ -85,7 +108,6 @@ public class FieldView extends View {
         circleDrawable.getPaint().setStyle(Paint.Style.STROKE);
         circleDrawable.getPaint().setStrokeWidth(getResources().getDimension(R.dimen.portrait_circle_thickness));
         circleDrawable.getPaint().setAlpha(arrowPaint.getAlpha());
-        //circleDrawable.setBounds(0, 0, 2 * (int) fingerDelta, 2 * (int) fingerDelta);
         portraitArrow.addLevel(1, 1, circleDrawable);
 
         arrow = Bitmap.createScaledBitmap(arrow, (int) fingerDelta, (int) fingerDelta, false);
@@ -98,13 +120,13 @@ public class FieldView extends View {
             canvas.drawBitmap(arrow, matrix, arrowPaint);
             canvas.drawCircle(fingerDelta * 1.5f, fingerDelta * 1.5f, fingerDelta * 0.8f, circleDrawable.getPaint());
             BitmapDrawable drawable = new BitmapDrawable(getResources(), bitmap);
-            //drawable.setBounds(0, 0, 2 * (int) fingerDelta, 2 * (int) fingerDelta);
             portraitArrow.addLevel(i, i, drawable);
         }
-        //portraitArrow.setBounds(0, 0, 2 * (int) fingerDelta, 2 * (int) fingerDelta);
     }
 
     private void updateRects() {
+        if (landscapeArrowPad != null)
+            return;
         int h = getHeight();
         float rectSide = getResources().getDimension(R.dimen.landscape_button_size);
         rectUp = new RectF(rectSide, h - 3 * rectSide, 2 * rectSide, h - 2 * rectSide);
@@ -149,7 +171,6 @@ public class FieldView extends View {
                     portraitArrow.setLevel(1);
                 invalidatePortraitArrow();
             } else {
-                Log.d(TAG, "Sending move request, orientation: landscape");
                 alreadyMoved = true;
                 if (rectUp == null || rectLeft == null || rectRight == null || rectDown == null)
                     updateRects();
@@ -163,6 +184,8 @@ public class FieldView extends View {
                     field.sendMoveMessage(MoveDirection.DOWN);
                 else
                     alreadyMoved = false;
+                if (alreadyMoved)
+                    Log.d(TAG, "Sending move request, orientation: landscape");
             }
         }
     }
