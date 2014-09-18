@@ -4,6 +4,7 @@ import android.content.Context;
 import android.database.DataSetObserver;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.ArrayMap;
 import android.util.AttributeSet;
 import android.view.View;
 import android.widget.AdapterView;
@@ -11,13 +12,17 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CursorAdapter;
 import android.widget.RadioButton;
+import android.widget.TextView;
+
+import java.util.Map;
 
 /**
  * Created by dimatomp on 15.09.14.
  */
 public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements CheckBox.OnCheckedChangeListener {
     CursorAdapter adapter;
-
+    MoneyPicker moneyPicker;
+    Map<String, Integer> minimalAmounts;
     private DataSetObserver observer = new DataSetObserver() {
         @Override
         public void onChanged() {
@@ -31,7 +36,6 @@ public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements Che
             removeAllViewsInLayout();
         }
     };
-
     private RadioButton selectedView;
 
     public AdapterRadioGroup(Context context) {
@@ -74,8 +78,11 @@ public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements Che
 
     private void updateChildren() {
         if (getChildCount() == 0) {
+            minimalAmounts = new ArrayMap<>();
             for (int i = 0; i < adapter.getCount(); i++) {
                 View newChild = adapter.getView(i, null, this);
+                minimalAmounts.put(((TextView) newChild).getText().toString(),
+                        ((RadioGroupAdapter) adapter).getMinAmount());
                 ((RadioButton) newChild).setOnCheckedChangeListener(this);
                 addAndMeasureChild(newChild);
             }
@@ -89,7 +96,7 @@ public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements Che
             if (((RadioButton) getChildAt(i)).isChecked())
                 selView = i;
         }
-        if (selView != -1)
+        if (selView != -1 && selectedView == null)
             setSelection(selView);
         setMinimumWidth(minWidth);
         setMinimumHeight(minHeight);
@@ -122,7 +129,23 @@ public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements Che
             for (int i = 0; i < getChildCount(); i++)
                 if (getChildAt(i) != selectedView)
                     getChildAt(i).setEnabled(false);
+            if (moneyPicker != null)
+                showMoneyPicker();
+            ((GameField) getContext()).enableOkButton();
         }
+    }
+
+    private void showMoneyPicker() {
+        moneyPicker.setVisibility(VISIBLE);
+        moneyPicker.setMinimalAmount(minimalAmounts.get(selectedView.getText().toString()));
+    }
+
+    public void setMoneyPicker(MoneyPicker moneyPicker) {
+        this.moneyPicker = moneyPicker;
+        if (selectedView != null)
+            showMoneyPicker();
+        else
+            moneyPicker.setVisibility(INVISIBLE);
     }
 
     @Override
@@ -130,22 +153,26 @@ public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements Che
         super.onSaveInstanceState();
         String[] texts = new String[getChildCount()];
         boolean[] checked = new boolean[getChildCount()];
+        int[] amounts = new int[getChildCount()];
         for (int i = 0; i < getChildCount(); i++) {
             texts[i] = ((RadioButton) getChildAt(i)).getText().toString();
             checked[i] = ((RadioButton) getChildAt(i)).isChecked();
+            amounts[i] = minimalAmounts.get(texts[i]);
         }
-        return new SavedInstanceState(texts, checked);
+        return new SavedInstanceState(texts, checked, amounts);
     }
 
     @Override
     protected void onRestoreInstanceState(Parcelable state) {
         super.onRestoreInstanceState(null);
         SavedInstanceState savedInstanceState = (SavedInstanceState) state;
+        minimalAmounts = new ArrayMap<>();
         for (int i = 0; i < savedInstanceState.texts.length; i++) {
             RadioButton button = new RadioButton(getContext());
             button.setText(savedInstanceState.texts[i]);
             button.setChecked(savedInstanceState.checked[i]);
             button.setOnCheckedChangeListener(this);
+            minimalAmounts.put(savedInstanceState.texts[i], savedInstanceState.minAmounts[i]);
             addAndMeasureChild(button);
         }
         updateChildren();
@@ -160,7 +187,9 @@ public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements Che
                 source.readStringArray(texts);
                 boolean[] checked = new boolean[texts.length];
                 source.readBooleanArray(checked);
-                return new SavedInstanceState(texts, checked);
+                int[] minAmounts = new int[source.readInt()];
+                source.readIntArray(minAmounts);
+                return new SavedInstanceState(texts, checked, minAmounts);
             }
 
             @Override
@@ -168,12 +197,15 @@ public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements Che
                 return new SavedInstanceState[size];
             }
         };
+
         final String[] texts;
         final boolean[] checked;
+        final int[] minAmounts;
 
-        SavedInstanceState(String[] texts, boolean[] checked) {
+        SavedInstanceState(String[] texts, boolean[] checked, int[] minAmounts) {
             this.texts = texts;
             this.checked = checked;
+            this.minAmounts = minAmounts;
         }
 
         @Override
@@ -186,6 +218,7 @@ public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements Che
             dest.writeInt(texts.length);
             dest.writeStringArray(texts);
             dest.writeBooleanArray(checked);
+            dest.writeIntArray(minAmounts);
         }
     }
 }

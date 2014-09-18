@@ -10,7 +10,6 @@ public class JoinMessage {
     }
 
     public JoinMessage(String userName) {
-        super();
         this.userName = userName;
     }
 

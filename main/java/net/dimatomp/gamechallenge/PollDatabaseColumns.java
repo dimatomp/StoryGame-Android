@@ -13,7 +13,7 @@ public interface PollDatabaseColumns extends BaseColumns {
     String MONEY = "MoneyInvested";
 
     String VOTE_OPTIONS = "options_table";
-    String POLL_ID = "PollID";
+    String POLL_NAME = "PollName";
     String OPTION_NAME = "OptionName";
     String MINIMAL_AMOUNT = "MinimalAmount";
 }

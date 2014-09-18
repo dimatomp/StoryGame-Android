@@ -104,7 +104,7 @@ public class ServerConnectionHandler extends Service {
                     if (loginForm == null)
                         return;
                     startInfo = mapper.convertValue(args[0], StartMessage.class);
-                    if (startInfo.getAccepted()) {
+                    if (startInfo.getSuccess()) {
                         connectionStatus = ConnectionStatus.SUCCESS;
                         loginForm.runOnUiThread(new Runnable() {
                             @Override
@@ -194,8 +194,8 @@ public class ServerConnectionHandler extends Service {
             return connectionStatus == ConnectionStatus.VOTES_RETRIEVED;
         }
 
-        public void sendMoveRequest(int direction) {
-            MoveMessage message = new MoveMessage(direction);
+        public void sendMoveRequest(int dx, int dy) {
+            MoveMessage message = new MoveMessage(dx, dy);
             socket.emit("move_request", mapper.convertValue(message, JSONObject.class));
         }
 

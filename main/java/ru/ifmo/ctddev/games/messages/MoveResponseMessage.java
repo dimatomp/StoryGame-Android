@@ -5,51 +5,57 @@ package ru.ifmo.ctddev.games.messages;
  */
 public class MoveResponseMessage {
 
-    private boolean successful;
+    private boolean success;
     private int[] layer;
-    private int speed;
-    private int direction;
+    private int dx, dy;
 
-    public MoveResponseMessage() {
+    public MoveResponseMessage() {}
+
+    public MoveResponseMessage(boolean success) {
+        this.success = success;
+        layer = null;
     }
 
-    public MoveResponseMessage(boolean successful, int[] layer, int speed, int direction) {
-        super();
-        this.successful = successful;
+    public MoveResponseMessage(boolean success, int[] layer, int dx, int dy) {
+        this.success = success;
         this.layer = layer;
-        this.speed = speed;
-        this.direction = direction;
-    }
-
-    public boolean getSuccessful() {
-        return successful;
+        this.dx = dx;
+        this.dy = dy;
     }
 
     public void setSuccessful(boolean successful) {
-        this.successful = successful;
+        this.success = successful;
+    }
+
+    public boolean getSuccess() {
+        return success;
     }
 
     public int[] getLayer() {
         return layer;
     }
 
+    public int getDx() {
+        return dx;
+    }
+
+    public int getDy() {
+        return dy;
+    }
+
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+
     public void setLayer(int[] layer) {
         this.layer = layer;
     }
 
-    public int getSpeed() {
-        return speed;
+    public void setDx(int dx) {
+        this.dx = dx;
     }
 
-    public void setSpeed(int speed) {
-        this.speed = speed;
-    }
-
-    public int getDirection() {
-        return direction;
-    }
-
-    public void setDirection(int direction) {
-        this.direction = direction;
+    public void setDy(int dy) {
+        this.dy = dy;
     }
 }

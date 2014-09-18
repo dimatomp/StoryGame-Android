@@ -15,7 +15,7 @@ import static net.dimatomp.gamechallenge.PollDatabaseColumns.MAIN_TABLE;
 import static net.dimatomp.gamechallenge.PollDatabaseColumns.MINIMAL_AMOUNT;
 import static net.dimatomp.gamechallenge.PollDatabaseColumns.MONEY;
 import static net.dimatomp.gamechallenge.PollDatabaseColumns.OPTION_NAME;
-import static net.dimatomp.gamechallenge.PollDatabaseColumns.POLL_ID;
+import static net.dimatomp.gamechallenge.PollDatabaseColumns.POLL_NAME;
 import static net.dimatomp.gamechallenge.PollDatabaseColumns.PRIORITY;
 import static net.dimatomp.gamechallenge.PollDatabaseColumns.TITLE;
 import static net.dimatomp.gamechallenge.PollDatabaseColumns.VOTE_OPTIONS;
@@ -26,7 +26,7 @@ import static net.dimatomp.gamechallenge.PollDatabaseColumns._ID;
  */
 public class PollDatabase extends SQLiteOpenHelper {
     public static final String[] POLL_COLUMNS = new String[]{_ID, TITLE};
-    public static final String[] OPTION_COLUMNS = new String[]{_ID, OPTION_NAME};
+    public static final String[] OPTION_COLUMNS = new String[]{_ID, OPTION_NAME, MINIMAL_AMOUNT};
     private static final String TAG = "PollDatabase";
     private static PollDatabase instance;
 
@@ -40,14 +40,11 @@ public class PollDatabase extends SQLiteOpenHelper {
         return instance;
     }
 
-    private static void dropEverything(SQLiteDatabase db) {
-        db.execSQL("DELETE FROM " + MAIN_TABLE + ";");
-        db.execSQL("DELETE FROM " + VOTE_OPTIONS + ";");
-    }
-
     public static void dropEverything(Context context) {
         Log.d(TAG, "Drop method called");
-        dropEverything(getInstance(context).getWritableDatabase());
+        SQLiteDatabase db = getInstance(context).getWritableDatabase();
+        db.execSQL("DELETE FROM " + MAIN_TABLE + ";");
+        db.execSQL("DELETE FROM " + VOTE_OPTIONS + ";");
     }
 
     public static void addPoll(Context context, Poll poll, UserVote chosen) {
@@ -58,14 +55,15 @@ public class PollDatabase extends SQLiteOpenHelper {
         values.put(TITLE, poll.getQuestion());
         values.put(PRIORITY, poll.getPriority());
         if (chosen != null) {
-            values.put(CHOSEN, poll.getOptions()[chosen.getOption()]);
-            values.put(MONEY, chosen.getMoney());
-        }
+            values.put(CHOSEN, chosen.getOptionName());
+            values.put(MONEY, chosen.getAmount());
+        } else
+            values.put(MONEY, 0);
         db.insert(MAIN_TABLE, null, values);
         values.clear();
-        values.put(POLL_ID, poll.getId());
-        for (int i = 0; i < poll.getOptions().length; i++) {
-            values.put(OPTION_NAME, poll.getOptions()[i]);
+        values.put(POLL_NAME, poll.getQuestion());
+        for (int i = 0; i < poll.getOptionsName().length; i++) {
+            values.put(OPTION_NAME, poll.getOptionsName()[i]);
             values.put(MINIMAL_AMOUNT, poll.getMinimalAmount()[i]);
             db.insert(VOTE_OPTIONS, null, values);
         }
@@ -78,23 +76,32 @@ public class PollDatabase extends SQLiteOpenHelper {
 
     public static Cursor getPollOptions(Context context, String title) {
         SQLiteDatabase db = getInstance(context).getReadableDatabase();
-        Cursor findId = db.query(MAIN_TABLE, new String[]{_ID}, TITLE + " = '" + title + "'", null, null, null, null);
-        findId.moveToFirst();
-        return db.query(VOTE_OPTIONS, OPTION_COLUMNS, POLL_ID + " = " +
-                findId.getInt(findId.getColumnIndex(_ID)), null, null, null, null);
+        return db.query(VOTE_OPTIONS, OPTION_COLUMNS, POLL_NAME + " = '" + title + "'", null, null, null, null);
     }
 
-    public static void chooseOption(Context context, int pollID, int optionID, int money) {
-        SQLiteDatabase db = getInstance(context).getWritableDatabase();
+    public static int getPollIDByName(Context context, String title) {
+        SQLiteDatabase db = getInstance(context).getReadableDatabase();
+        Cursor findId = db.query(MAIN_TABLE, new String[]{_ID}, TITLE + " = '" + title + "'", null, null, null, null);
+        findId.moveToFirst();
+        return findId.getInt(findId.getColumnIndex(_ID));
+    }
+
+    public static void chooseOption(Context context, String pollName, String optionName, int money) {
+        SQLiteDatabase db = getInstance(context).getReadableDatabase();
+        Cursor findMoney = db.query(MAIN_TABLE, new String[]{MONEY}, TITLE + " = '" + pollName + "'", null, null, null, null);
+        findMoney.moveToFirst();
+        int cMoney = findMoney.getInt(findMoney.getColumnIndex(MONEY)) + money;
+        db = getInstance(context).getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(CHOSEN, optionID);
-        values.put(MONEY, money);
-        db.update(MAIN_TABLE, values, _ID + " = " + pollID, null);
+        values.put(CHOSEN, optionName);
+        values.put(MONEY, cMoney);
+        db.update(MAIN_TABLE, values, TITLE + " = '" + pollName + "'", null);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        dropEverything(db);
+        db.execSQL("DELETE TABLE IF EXISTS " + MAIN_TABLE + ";");
+        db.execSQL("DELETE TABLE IF EXISTS " + VOTE_OPTIONS + ";");
     }
 
     @Override
@@ -108,7 +115,7 @@ public class PollDatabase extends SQLiteOpenHelper {
                 MONEY + " INTEGER NULL);");
         db.execSQL("CREATE TABLE " + VOTE_OPTIONS + " (" +
                 _ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                POLL_ID + " INTEGER NOT NULL, " +
+                POLL_NAME + " TEXT NOT NULL, " +
                 OPTION_NAME + " TEXT NOT NULL, " +
                 MINIMAL_AMOUNT + " INTEGER NOT NULL);");
     }

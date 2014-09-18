@@ -15,22 +15,20 @@ public class MoneyPicker extends NumberPicker {
 
     public MoneyPicker(Context context) {
         super(context);
-        setOnValueChangedListener(onMoneyChangedListener);
-        setMinValue(0);
-        setMaxValue(11);
-        setWrapSelectorWheel(false);
+        initialize();
     }
 
     public MoneyPicker(Context context, AttributeSet attrs) {
         super(context, attrs);
-        setOnValueChangedListener(onMoneyChangedListener);
-        setMinValue(0);
-        setMaxValue(11);
-        setWrapSelectorWheel(false);
+        initialize();
     }
 
     public MoneyPicker(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        initialize();
+    }
+
+    private void initialize() {
         setOnValueChangedListener(onMoneyChangedListener);
         setMinValue(0);
         setMaxValue(11);
@@ -40,6 +38,7 @@ public class MoneyPicker extends NumberPicker {
     public void setMinimalAmount(int minimalAmount) {
         this.minimalAmount = minimalAmount;
         onMoneyChangedListener.updateValues();
+        setDisplayedValues(onMoneyChangedListener.values);
     }
 
     public int getSpecifiedAmount() {
@@ -55,6 +54,7 @@ public class MoneyPicker extends NumberPicker {
     @Override
     protected void onRestoreInstanceState(Parcelable state) {
         super.onRestoreInstanceState(null);
+        minimalAmount = ((SavedInstanceState) state).minimalAmount;
         onMoneyChangedListener.numberPickerStep = ((SavedInstanceState) state).numberPickerStep;
         onMoneyChangedListener.updateValues();
         setValue(((SavedInstanceState) state).cValue);
@@ -99,11 +99,6 @@ public class MoneyPicker extends NumberPicker {
         final String[] values = new String[12];
         int numberPickerStep = 1;
 
-        {
-            updateValues();
-            setDisplayedValues(values);
-        }
-
         private void updateValues() {
             values[0] = Integer.toString(minimalAmount + numberPickerStep / 10 * 9);
             for (int i = 1; i <= 10; i++)
@@ -114,7 +109,7 @@ public class MoneyPicker extends NumberPicker {
         @Override
         public void onValueChange(NumberPicker picker, int oldVal, int newVal) {
             if (newVal == picker.getMaxValue()) {
-                if (numberPickerStep * 10 < Integer.MAX_VALUE / 10) {
+                if (numberPickerStep * 10 < (Integer.MAX_VALUE - minimalAmount) / 10) {
                     numberPickerStep *= 10;
                     updateValues();
                     picker.setValue(2);

@@ -4,32 +4,34 @@ package ru.ifmo.ctddev.games.messages;
  * Created by Aksenov239 on 28.08.2014.
  */
 public class StartMessage {
-    private boolean accepted;
-    private int[][] field;
+    private boolean success;
+    private int field[][];
 
-    public StartMessage() {
+    public StartMessage() {}
+
+    public StartMessage(boolean success) {
+        this.success = success;
+        field = null;
     }
 
-    public StartMessage(boolean accepted, int[][] field) {
-        super();
-        this.accepted = accepted;
+    public StartMessage(boolean success, int field[][]) {
+        this.success = success;
         this.field = field;
     }
 
-    public boolean getAccepted() {
-        return accepted;
+    public boolean getSuccess() {
+        return success;
     }
 
-    public void setAccepted(boolean accepted) {
-        this.accepted = accepted;
+    public void setSuccess(boolean success) {
+        this.success = success;
     }
 
     public int[][] getField() {
         return field;
     }
 
-    public void setField(int[][] field) {
-        this.field = field;
+    public void setField(int[][] f) {
+        field = f;
     }
-
 }

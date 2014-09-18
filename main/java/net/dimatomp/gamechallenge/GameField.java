@@ -34,6 +34,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     private static final String TAG = "GameField";
     private static final String SAVED_INSTANCE_FIELD = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_FIELD";
     private static final String SAVED_INSTANCE_DIALOG = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_DIALOG";
+    private static final String SAVED_INSTANCE_DIALOG_SHOWN = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_DIALOG_SHOWN";
     FieldView field;
     boolean justStarted;
     SimpleCursorAdapter pollListAdapter;
@@ -41,8 +42,10 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     AlertDialog.Builder pollChoiceDialogBuilder;
     AlertDialog pollChoiceDialog;
     PollLoaderCallbacks pollLoaderCallbacks = new PollLoaderCallbacks();
+    AdapterRadioGroup dialogRadioGroup;
+    MoneyPicker dialogPicker;
     private HandlerConnection connection = new HandlerConnection();
-    private boolean dialogShown;
+    private String dialogShown;
 
     private void setupTabs() {
         TabHost host = (TabHost) findViewById(R.id.tabHost);
@@ -88,14 +91,22 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         args.putString(PollLoaderCallbacks.ARG_POLL_NAME, ((TextView) view).getText().toString());
         getLoaderManager().restartLoader(1, args, pollLoaderCallbacks);
 
-        // TODO Manage minimum values in MoneyPicker
         createDialog(getDialogView());
+        dialogShown = ((TextView) view).getText().toString();
         showDialog();
+    }
+
+    private void showDialog() {
+        pollChoiceDialog.show();
+        pollChoiceDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
     }
 
     private View getDialogView() {
         View theView = getLayoutInflater().inflate(R.layout.voting_dialog, null);
-        ((AdapterRadioGroup) theView.findViewById(R.id.poll_choices)).setAdapter(pollChoicesAdapter);
+        dialogRadioGroup = (AdapterRadioGroup) theView.findViewById(R.id.poll_choices);
+        dialogRadioGroup.setAdapter(pollChoicesAdapter);
+        dialogPicker = (MoneyPicker) theView.findViewById(R.id.amount_invested);
+        dialogRadioGroup.setMoneyPicker(dialogPicker);
         return theView;
     }
 
@@ -103,9 +114,8 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         pollChoiceDialog = pollChoiceDialogBuilder.setView(view).create();
     }
 
-    private void showDialog() {
-        dialogShown = true;
-        pollChoiceDialog.show();
+    public void enableOkButton() {
+        pollChoiceDialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
     }
 
     private void setupVoteDialog() {
@@ -114,20 +124,23 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
+                        String optionName = ((TextView) dialogRadioGroup.getSelectedView()).getText().toString();
+                        int amountInvested = dialogPicker.getSpecifiedAmount();
+                        Log.v(TAG, "Voted for " + optionName + ", paid " + amountInvested);
                         // TODO FIRE ZE MISSILES !!!
-                        dialogShown = false;
+                        dialogShown = null;
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        dialogShown = false;
+                        dialogShown = null;
                     }
                 })
                 .setOnCancelListener(new DialogInterface.OnCancelListener() {
                     @Override
                     public void onCancel(DialogInterface dialog) {
-                        dialogShown = false;
+                        dialogShown = null;
                     }
                 });
     }
@@ -156,8 +169,8 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         field = (FieldView) findViewById(R.id.fieldView);
         if (savedInstanceState != null) {
             field.setField((int[][]) savedInstanceState.getSerializable(SAVED_INSTANCE_FIELD), false);
-            dialogShown = savedInstanceState.containsKey(SAVED_INSTANCE_DIALOG);
-            if (dialogShown) {
+            if (savedInstanceState.containsKey(SAVED_INSTANCE_DIALOG_SHOWN)) {
+                dialogShown = savedInstanceState.getString(SAVED_INSTANCE_DIALOG_SHOWN);
                 pollChoiceDialog = pollChoiceDialogBuilder.setView(getDialogView()).create();
                 pollChoiceDialog.onRestoreInstanceState(savedInstanceState.getBundle(SAVED_INSTANCE_DIALOG));
             }
@@ -169,14 +182,14 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     @Override
     protected void onResume() {
         super.onResume();
-        if (dialogShown)
+        if (dialogShown != null)
             pollChoiceDialog.show();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (dialogShown)
+        if (dialogShown != null)
             pollChoiceDialog.dismiss();
     }
 
@@ -184,8 +197,10 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putSerializable(SAVED_INSTANCE_FIELD, field.getField());
-        if (dialogShown)
+        if (dialogShown != null) {
+            outState.putString(SAVED_INSTANCE_DIALOG_SHOWN, dialogShown);
             outState.putBundle(SAVED_INSTANCE_DIALOG, pollChoiceDialog.onSaveInstanceState());
+        }
     }
 
     @Override
@@ -199,8 +214,9 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     }
 
     public void handleMoveResponse(MoveResponseMessage object) {
-        if (object.getSuccessful()) {
-            field.addLayer(MoveDirection.values()[object.getDirection()], object.getLayer(), object.getSpeed());
+        if (object.getSuccess()) {
+            // TODO Hardcoded speed
+            field.addLayer(MoveDirection.getDirection(object.getDx(), object.getDy()), object.getLayer(), 100);
         } else
             field.handleNextMove(true);
     }
@@ -223,7 +239,21 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     }
 
     public enum MoveDirection {
-        RIGHT, DOWN, LEFT, UP
+        RIGHT(1, 0), DOWN(0, 1), LEFT(-1, 0), UP(0, -1);
+
+        final int dx, dy;
+
+        MoveDirection(int dx, int dy) {
+            this.dx = dx;
+            this.dy = dy;
+        }
+
+        static MoveDirection getDirection(int dx, int dy) {
+            for (MoveDirection direction : values())
+                if (dx == direction.dx && dy == direction.dy)
+                    return direction;
+            return null;
+        }
     }
 
     class PollLoaderCallbacks implements LoaderManager.LoaderCallbacks<Cursor> {
@@ -276,7 +306,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         }
 
         public void sendMoveRequest(MoveDirection direction) {
-            service.sendMoveRequest(direction.ordinal());
+            service.sendMoveRequest(direction.dx, direction.dy);
         }
 
         @Override
