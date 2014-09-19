@@ -19,4 +19,7 @@
 
     <string name="vote_dialog_title">Contribute into&#8230;</string>
     <string name="vote_option_format">%1$s (min: %2$d)</string>
+    <string name="inventory_sell">Sell for\n%d gold</string>
+    <string name="inventory_buy">Buy for\n%d gold</string>
+    <string name="inventory_throw_out">Throw\nout</string>
 </resources>

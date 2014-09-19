@@ -58,7 +58,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         host.addTab(childView);
         childView = host.newTabSpec("pollListView");
         createIndicator(host, childView, getString(R.string.tab_polls),
-                getResources().getDrawable(android.R.drawable.checkbox_on_background));
+                getResources().getDrawable(android.R.drawable.ic_menu_agenda));
         childView.setContent(R.id.pollsTab);
         host.addTab(childView);
         childView = host.newTabSpec("statusView");
@@ -92,6 +92,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         String pollName = ((TextView) view).getText().toString();
         args.putString(PollLoaderCallbacks.ARG_POLL_NAME, pollName);
         getLoaderManager().restartLoader(1, args, pollLoaderCallbacks);
+        // TODO move this to AsyncTask
         Cursor findChoice = PollDatabase.getPollDataByName(this, pollName);
         pollChoicesAdapter.setPlayerChoice(findChoice.getString(findChoice.getColumnIndex(CHOSEN)));
 
