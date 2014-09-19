@@ -2,6 +2,7 @@ package net.dimatomp.gamechallenge;
 
 import android.app.Service;
 import android.content.Intent;
+import android.database.Cursor;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
@@ -21,6 +22,8 @@ import ru.ifmo.ctddev.games.messages.MoveMessage;
 import ru.ifmo.ctddev.games.messages.MoveResponseMessage;
 import ru.ifmo.ctddev.games.messages.StartMessage;
 import ru.ifmo.ctddev.games.messages.UserVote;
+import ru.ifmo.ctddev.games.messages.VoteMessage;
+import ru.ifmo.ctddev.games.messages.VoteResponseMessage;
 import ru.ifmo.ctddev.games.messages.VotesInformationResponseMessage;
 import ru.ifmo.ctddev.games.state.Poll;
 
@@ -66,11 +69,11 @@ public class ServerConnectionHandler extends Service {
         void showLoginErrorMessage(final int res) {
             if (loginForm != null)
                 loginForm.runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    loginForm.showError(res);
-                }
-            });
+                    @Override
+                    public void run() {
+                        loginForm.showError(res);
+                    }
+                });
         }
 
         public void setLoginForm(LoginForm loginForm) {
@@ -177,13 +180,26 @@ public class ServerConnectionHandler extends Service {
                         }
                         connectionStatus = ConnectionStatus.VOTES_RETRIEVED;
                         if (gameField != null)
-                            gameField.updateVoteInfo();
+                            gameField.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    gameField.updateVoteInfo();
+                                }
+                            });
                     }
                 }
             }).on("new_vote", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
-                    socket.emit("vote_information");
+                    Poll poll = mapper.convertValue(args[0], Poll.class);
+                    PollDatabase.addPoll(ServerConnectionHandler.this, poll, null);
+                    if (gameField != null)
+                        gameField.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                gameField.updateVoteInfo();
+                            }
+                        });
                 }
             });
 
@@ -192,6 +208,21 @@ public class ServerConnectionHandler extends Service {
 
         public boolean isVotesRetrieved() {
             return connectionStatus == ConnectionStatus.VOTES_RETRIEVED;
+        }
+
+        public void sendVoteMessage(final String pollName, final String optionName, final int amount) {
+            Cursor pollInfo = PollDatabase.getPollDataByName(ServerConnectionHandler.this, pollName);
+            int pollId = pollInfo.getInt(pollInfo.getColumnIndex(PollDatabaseColumns._ID));
+            socket.once("vote_response", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+                    VoteResponseMessage message = mapper.convertValue(args[0], VoteResponseMessage.class);
+                    if (message.getSuccessful())
+                        PollDatabase.chooseOption(ServerConnectionHandler.this, pollName, optionName, amount);
+                }
+            });
+            VoteMessage message = new VoteMessage(pollId, optionName, amount);
+            socket.emit("vote", mapper.convertValue(message, JSONObject.class));
         }
 
         public void sendMoveRequest(int dx, int dy) {

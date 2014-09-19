@@ -27,6 +27,7 @@ import static net.dimatomp.gamechallenge.PollDatabaseColumns._ID;
 public class PollDatabase extends SQLiteOpenHelper {
     public static final String[] POLL_COLUMNS = new String[]{_ID, TITLE};
     public static final String[] OPTION_COLUMNS = new String[]{_ID, OPTION_NAME, MINIMAL_AMOUNT};
+    public static final String[] POLL_DATA = new String[]{_ID, CHOSEN, MONEY};
     private static final String TAG = "PollDatabase";
     private static PollDatabase instance;
 
@@ -64,7 +65,7 @@ public class PollDatabase extends SQLiteOpenHelper {
         values.put(POLL_NAME, poll.getQuestion());
         for (int i = 0; i < poll.getOptionsName().length; i++) {
             values.put(OPTION_NAME, poll.getOptionsName()[i]);
-            values.put(MINIMAL_AMOUNT, poll.getMinimalAmount()[i]);
+            values.put(MINIMAL_AMOUNT, chosen == null ? poll.getMinimalAmount()[i] : 0);
             db.insert(VOTE_OPTIONS, null, values);
         }
     }
@@ -79,23 +80,24 @@ public class PollDatabase extends SQLiteOpenHelper {
         return db.query(VOTE_OPTIONS, OPTION_COLUMNS, POLL_NAME + " = '" + title + "'", null, null, null, null);
     }
 
-    public static int getPollIDByName(Context context, String title) {
+    public static Cursor getPollDataByName(Context context, String title) {
         SQLiteDatabase db = getInstance(context).getReadableDatabase();
-        Cursor findId = db.query(MAIN_TABLE, new String[]{_ID}, TITLE + " = '" + title + "'", null, null, null, null);
+        Cursor findId = db.query(MAIN_TABLE, POLL_DATA, TITLE + " = '" + title + "'", null, null, null, null);
         findId.moveToFirst();
-        return findId.getInt(findId.getColumnIndex(_ID));
+        return findId;
     }
 
     public static void chooseOption(Context context, String pollName, String optionName, int money) {
-        SQLiteDatabase db = getInstance(context).getReadableDatabase();
-        Cursor findMoney = db.query(MAIN_TABLE, new String[]{MONEY}, TITLE + " = '" + pollName + "'", null, null, null, null);
-        findMoney.moveToFirst();
+        Cursor findMoney = getPollDataByName(context, pollName);
         int cMoney = findMoney.getInt(findMoney.getColumnIndex(MONEY)) + money;
-        db = getInstance(context).getWritableDatabase();
+        SQLiteDatabase db = getInstance(context).getWritableDatabase();
         ContentValues values = new ContentValues();
         values.put(CHOSEN, optionName);
         values.put(MONEY, cMoney);
         db.update(MAIN_TABLE, values, TITLE + " = '" + pollName + "'", null);
+        values.clear();
+        values.put(MINIMAL_AMOUNT, 0);
+        db.update(VOTE_OPTIONS, values, POLL_NAME + " = '" + pollName + "'", null);
     }
 
     @Override

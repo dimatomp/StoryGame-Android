@@ -23,6 +23,7 @@ public class RadioGroupAdapter extends SimpleCursorAdapter {
 
     public void setPlayerChoice(String playerChoice) {
         this.playerChoice = playerChoice;
+        notifyDataSetChanged();
     }
 
     @Override

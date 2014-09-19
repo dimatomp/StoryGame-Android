@@ -28,6 +28,7 @@ import android.widget.TextView;
 
 import ru.ifmo.ctddev.games.messages.MoveResponseMessage;
 
+import static net.dimatomp.gamechallenge.PollDatabaseColumns.CHOSEN;
 import static net.dimatomp.gamechallenge.PollDatabaseColumns.TITLE;
 
 public class GameField extends Activity implements AdapterView.OnItemClickListener {
@@ -88,8 +89,11 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Bundle args = new Bundle();
-        args.putString(PollLoaderCallbacks.ARG_POLL_NAME, ((TextView) view).getText().toString());
+        String pollName = ((TextView) view).getText().toString();
+        args.putString(PollLoaderCallbacks.ARG_POLL_NAME, pollName);
         getLoaderManager().restartLoader(1, args, pollLoaderCallbacks);
+        Cursor findChoice = PollDatabase.getPollDataByName(this, pollName);
+        pollChoicesAdapter.setPlayerChoice(findChoice.getString(findChoice.getColumnIndex(CHOSEN)));
 
         createDialog(getDialogView());
         dialogShown = ((TextView) view).getText().toString();
@@ -127,7 +131,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                         String optionName = ((TextView) dialogRadioGroup.getSelectedView()).getText().toString();
                         int amountInvested = dialogPicker.getSpecifiedAmount();
                         Log.v(TAG, "Voted for " + optionName + ", paid " + amountInvested);
-                        // TODO FIRE ZE MISSILES !!!
+                        connection.sendVoteMessage(optionName, amountInvested);
                         dialogShown = null;
                     }
                 })
@@ -163,7 +167,6 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                 new int[]{android.R.id.text1}, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
         pollChoicesAdapter = new RadioGroupAdapter(this, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
         setupVotesList();
-        getLoaderManager().initLoader(0, null, pollLoaderCallbacks);
         setupVoteDialog();
 
         field = (FieldView) findViewById(R.id.fieldView);
@@ -303,6 +306,10 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
             this.service.setGameField(GameField.this);
             if (justStarted)
                 field.setField(this.service.getStartInfo().getField(), false);
+        }
+
+        public void sendVoteMessage(String optionName, int amount) {
+            service.sendVoteMessage(dialogShown, optionName, amount);
         }
 
         public void sendMoveRequest(MoveDirection direction) {
