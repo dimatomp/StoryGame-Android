@@ -44,7 +44,7 @@ public class LoginForm extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        PollDatabase.dropEverything(this);
+        GameDatabase.dropEverything(this);
     }
 
     @Override

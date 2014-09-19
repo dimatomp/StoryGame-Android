@@ -5,8 +5,8 @@ import android.provider.BaseColumns;
 /**
  * Created by dimatomp on 13.09.14.
  */
-public interface PollDatabaseColumns extends BaseColumns {
-    String MAIN_TABLE = "polls_table";
+public interface GameDatabaseColumns extends BaseColumns {
+    String POLLS_TABLE = "polls_table";
     String TITLE = "PollTitle";
     String PRIORITY = "PollStatus";
     String CHOSEN = "ChosenOption";
@@ -16,4 +16,9 @@ public interface PollDatabaseColumns extends BaseColumns {
     String POLL_NAME = "PollName";
     String OPTION_NAME = "OptionName";
     String MINIMAL_AMOUNT = "MinimalAmount";
+
+    String INVENTORY_TABLE = "inventory_table";
+    String ITEM_NAME = "ItemName";
+    String ITEM_TYPE = "ItemType";
+    String ITEM_COST = "ItemCost";
 }

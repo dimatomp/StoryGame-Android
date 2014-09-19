@@ -7,8 +7,8 @@ import android.widget.RadioButton;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
-import static net.dimatomp.gamechallenge.PollDatabaseColumns.MINIMAL_AMOUNT;
-import static net.dimatomp.gamechallenge.PollDatabaseColumns.OPTION_NAME;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.MINIMAL_AMOUNT;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.OPTION_NAME;
 
 /**
  * Created by dimatomp on 17.09.14.

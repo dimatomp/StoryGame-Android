@@ -172,11 +172,11 @@ public class ServerConnectionHandler extends Service {
                 @Override
                 public void call(Object... args) {
                     if (connectionStatus == ConnectionStatus.SUCCESS) {
-                        PollDatabase.dropEverything(ServerConnectionHandler.this);
+                        GameDatabase.dropEverything(ServerConnectionHandler.this);
                         VotesInformationResponseMessage message = mapper.convertValue(args[0], VotesInformationResponseMessage.class);
                         for (Poll poll : message.getPolls()) {
                             UserVote ansNumber = message.getVoted().get(poll.getId());
-                            PollDatabase.addPoll(ServerConnectionHandler.this, poll, ansNumber);
+                            GameDatabase.addPoll(ServerConnectionHandler.this, poll, ansNumber);
                         }
                         connectionStatus = ConnectionStatus.VOTES_RETRIEVED;
                         if (gameField != null)
@@ -192,7 +192,7 @@ public class ServerConnectionHandler extends Service {
                 @Override
                 public void call(Object... args) {
                     Poll poll = mapper.convertValue(args[0], Poll.class);
-                    PollDatabase.addPoll(ServerConnectionHandler.this, poll, null);
+                    GameDatabase.addPoll(ServerConnectionHandler.this, poll, null);
                     if (gameField != null)
                         gameField.runOnUiThread(new Runnable() {
                             @Override
@@ -211,14 +211,14 @@ public class ServerConnectionHandler extends Service {
         }
 
         public void sendVoteMessage(final String pollName, final String optionName, final int amount) {
-            Cursor pollInfo = PollDatabase.getPollDataByName(ServerConnectionHandler.this, pollName);
-            int pollId = pollInfo.getInt(pollInfo.getColumnIndex(PollDatabaseColumns._ID));
+            Cursor pollInfo = GameDatabase.getPollDataByName(ServerConnectionHandler.this, pollName);
+            int pollId = pollInfo.getInt(pollInfo.getColumnIndex(GameDatabaseColumns._ID));
             socket.once("vote_response", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
                     VoteResponseMessage message = mapper.convertValue(args[0], VoteResponseMessage.class);
                     if (message.getSuccessful())
-                        PollDatabase.chooseOption(ServerConnectionHandler.this, pollName, optionName, amount);
+                        GameDatabase.chooseOption(ServerConnectionHandler.this, pollName, optionName, amount);
                 }
             });
             VoteMessage message = new VoteMessage(pollId, optionName, amount);

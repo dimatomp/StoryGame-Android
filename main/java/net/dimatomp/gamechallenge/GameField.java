@@ -28,8 +28,8 @@ import android.widget.TextView;
 
 import ru.ifmo.ctddev.games.messages.MoveResponseMessage;
 
-import static net.dimatomp.gamechallenge.PollDatabaseColumns.CHOSEN;
-import static net.dimatomp.gamechallenge.PollDatabaseColumns.TITLE;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.CHOSEN;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.TITLE;
 
 public class GameField extends Activity implements AdapterView.OnItemClickListener {
     private static final String TAG = "GameField";
@@ -93,7 +93,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         args.putString(PollLoaderCallbacks.ARG_POLL_NAME, pollName);
         getLoaderManager().restartLoader(1, args, pollLoaderCallbacks);
         // TODO move this to AsyncTask
-        Cursor findChoice = PollDatabase.getPollDataByName(this, pollName);
+        Cursor findChoice = GameDatabase.getPollDataByName(this, pollName);
         pollChoicesAdapter.setPlayerChoice(findChoice.getString(findChoice.getColumnIndex(CHOSEN)));
 
         createDialog(getDialogView());
@@ -269,14 +269,14 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                 return new SimpleCursorLoader(GameField.this) {
                     @Override
                     public Cursor loadInBackground() {
-                        return PollDatabase.getPolls(getContext());
+                        return GameDatabase.getPolls(getContext());
                     }
                 };
             final String pollName = args.getString(ARG_POLL_NAME);
             return new SimpleCursorLoader(GameField.this) {
                 @Override
                 public Cursor loadInBackground() {
-                    return PollDatabase.getPollOptions(GameField.this, pollName);
+                    return GameDatabase.getPollOptions(GameField.this, pollName);
                 }
             };
         }
