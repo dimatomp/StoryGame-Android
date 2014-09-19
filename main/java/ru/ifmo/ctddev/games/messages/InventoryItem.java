@@ -1,7 +1,5 @@
 package ru.ifmo.ctddev.games.state;
 
-import ru.ifmo.ctddev.games.state.Item;
-
 /**
  * Created by pva701 on 9/19/14.
  */
@@ -28,22 +26,6 @@ public class InventoryItem {
         this.costSell = costSell;
         this.type = type;
         count = 0;
-    }
-
-    public InventoryItem(Item it) {
-        id = it.getId();
-        name = it.getName();
-        type = it.getType();
-        costSell = it.getCostSell();
-        count = 0;
-    }
-
-    public InventoryItem(Item it, int count) {
-        id = it.getId();
-        name = it.getName();
-        type = it.getType();
-        costSell = it.getCostSell();
-        this.count = count;
     }
 
     public void setCount(int count) {

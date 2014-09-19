@@ -16,6 +16,7 @@ import com.github.nkzawa.socketio.client.Socket;
 import org.json.JSONObject;
 
 import java.net.URISyntaxException;
+import java.util.Map;
 
 import ru.ifmo.ctddev.games.messages.JoinMessage;
 import ru.ifmo.ctddev.games.messages.MoveMessage;
@@ -25,6 +26,7 @@ import ru.ifmo.ctddev.games.messages.UserVote;
 import ru.ifmo.ctddev.games.messages.VoteMessage;
 import ru.ifmo.ctddev.games.messages.VoteResponseMessage;
 import ru.ifmo.ctddev.games.messages.VotesInformationResponseMessage;
+import ru.ifmo.ctddev.games.state.InventoryItem;
 import ru.ifmo.ctddev.games.state.Poll;
 
 public class ServerConnectionHandler extends Service {
@@ -59,7 +61,7 @@ public class ServerConnectionHandler extends Service {
         super.onDestroy();
     }
 
-    enum ConnectionStatus {IDLE, JOINING_IN, FAILED_TO_JOIN, SUCCESS, VOTES_RETRIEVED}
+    enum ConnectionStatus {IDLE, JOINING_IN, FAILED_TO_JOIN, SUCCESS}
 
     public class ServerConnectionBinder extends Binder {
         private ConnectionStatus connectionStatus = ConnectionStatus.IDLE;
@@ -72,6 +74,16 @@ public class ServerConnectionHandler extends Service {
                     @Override
                     public void run() {
                         loginForm.showError(res);
+                    }
+                });
+        }
+
+        void refreshGameField(final int loaderId) {
+            if (gameField != null)
+                gameField.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        gameField.updateInfo(loaderId);
                     }
                 });
         }
@@ -116,6 +128,7 @@ public class ServerConnectionHandler extends Service {
                             }
                         });
                         socket.emit("vote_information");
+                        socket.emit("get_inventory");
                     } else {
                         connectionStatus = ConnectionStatus.FAILED_TO_JOIN;
                         showLoginErrorMessage(R.string.error_server_refused);
@@ -178,14 +191,7 @@ public class ServerConnectionHandler extends Service {
                             UserVote ansNumber = message.getVoted().get(poll.getId());
                             GameDatabase.addPoll(ServerConnectionHandler.this, poll, ansNumber);
                         }
-                        connectionStatus = ConnectionStatus.VOTES_RETRIEVED;
-                        if (gameField != null)
-                            gameField.runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    gameField.updateVoteInfo();
-                                }
-                            });
+                        refreshGameField(GameField.LOADER_POLLS);
                     }
                 }
             }).on("new_vote", new Emitter.Listener() {
@@ -193,21 +199,20 @@ public class ServerConnectionHandler extends Service {
                 public void call(Object... args) {
                     Poll poll = mapper.convertValue(args[0], Poll.class);
                     GameDatabase.addPoll(ServerConnectionHandler.this, poll, null);
-                    if (gameField != null)
-                        gameField.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                gameField.updateVoteInfo();
-                            }
-                        });
+                    refreshGameField(GameField.LOADER_POLLS);
+                }
+            }).on("inventory", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+                    Map<Integer, InventoryItem> items = mapper.convertValue(args[0], Map.class);
+                    GameDatabase.dropEverything(ServerConnectionHandler.this);
+                    for (InventoryItem item: items.values())
+                        GameDatabase.addInvItem(ServerConnectionHandler.this, item);
+                    refreshGameField(GameField.LOADER_INVENTORY);
                 }
             });
-
+=
             socket.connect();
-        }
-
-        public boolean isVotesRetrieved() {
-            return connectionStatus == ConnectionStatus.VOTES_RETRIEVED;
         }
 
         public void sendVoteMessage(final String pollName, final String optionName, final int amount) {

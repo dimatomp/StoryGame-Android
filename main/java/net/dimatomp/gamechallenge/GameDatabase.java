@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 import ru.ifmo.ctddev.games.messages.UserVote;
+import ru.ifmo.ctddev.games.state.InventoryItem;
 import ru.ifmo.ctddev.games.state.Poll;
 
 import static net.dimatomp.gamechallenge.GameDatabaseColumns.*;
@@ -37,6 +38,33 @@ public class GameDatabase extends SQLiteOpenHelper {
         SQLiteDatabase db = getInstance(context).getWritableDatabase();
         db.execSQL("DELETE FROM " + POLLS_TABLE + ";");
         db.execSQL("DELETE FROM " + VOTE_OPTIONS + ";");
+        db.execSQL("DELETE FROM " + INVENTORY_TABLE + ";");
+    }
+
+    public static void addInvItem(Context context, InventoryItem item) {
+        Cursor cursor = getInstance(context).getReadableDatabase()
+                .query(INVENTORY_TABLE, new String[]{ITEM_COUNT},
+                        ITEM_NAME + " = '" + item.getName() + "'", null, null, null, null);
+        boolean alreadyExists = (cursor.getColumnCount() > 0);
+        SQLiteDatabase db = getInstance(context).getWritableDatabase();
+        ContentValues values = new ContentValues();
+        if (!alreadyExists) {
+            values.put(ITEM_NAME, item.getName());
+            values.put(ITEM_TYPE, item.getType());
+            values.put(ITEM_COST, item.getCostSell());
+            values.put(ITEM_COUNT, item.getCount());
+            db.insert(INVENTORY_TABLE, null, values);
+        } else {
+            cursor.moveToFirst();
+            values.put(ITEM_COUNT, item.getCount() + cursor.getInt(cursor.getColumnIndex(ITEM_COUNT)));
+            db.update(INVENTORY_TABLE, values, ITEM_NAME + " = '" + item.getName() + "'", null);
+        }
+    }
+
+    public static final String[] INVENTORY_COLUMNS = new String[]{_ID, ITEM_NAME, ITEM_TYPE, ITEM_COUNT, ITEM_COST};
+
+    public static Cursor getInventory(Context context) {
+        return getInstance(context).getReadableDatabase().query(INVENTORY_TABLE, INVENTORY_COLUMNS, null, null, null, null, null);
     }
 
     public static void addPoll(Context context, Poll poll, UserVote chosen) {
@@ -113,8 +141,9 @@ public class GameDatabase extends SQLiteOpenHelper {
                 MINIMAL_AMOUNT + " INTEGER NOT NULL);");
         db.execSQL("CREATE TABLE " + INVENTORY_TABLE + " (" +
                 _ID + " INTEGER PRIMARY KEY, " +
-                ITEM_NAME + " TEXT NOT NULL, " +
+                ITEM_NAME + " TEXT NOT NULL UNIQUE, " +
                 ITEM_TYPE + " INTEGER NOT NULL, " +
-                ITEM_COST + " INTEGER NOT NULL);");
+                ITEM_COST + " INTEGER NOT NULL, " +
+                ITEM_COUNT + " INTEGER NOT NULL);");
     }
 }

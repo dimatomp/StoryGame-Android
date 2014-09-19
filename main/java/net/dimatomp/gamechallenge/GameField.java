@@ -28,8 +28,7 @@ import android.widget.TextView;
 
 import ru.ifmo.ctddev.games.messages.MoveResponseMessage;
 
-import static net.dimatomp.gamechallenge.GameDatabaseColumns.CHOSEN;
-import static net.dimatomp.gamechallenge.GameDatabaseColumns.TITLE;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.*;
 
 public class GameField extends Activity implements AdapterView.OnItemClickListener {
     private static final String TAG = "GameField";
@@ -42,7 +41,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     RadioGroupAdapter pollChoicesAdapter;
     AlertDialog.Builder pollChoiceDialogBuilder;
     AlertDialog pollChoiceDialog;
-    PollLoaderCallbacks pollLoaderCallbacks = new PollLoaderCallbacks();
+    PollLoaderCallbacks loaderCallbacks = new PollLoaderCallbacks();
     AdapterRadioGroup dialogRadioGroup;
     MoneyPicker dialogPicker;
     private HandlerConnection connection = new HandlerConnection();
@@ -60,6 +59,11 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         createIndicator(host, childView, getString(R.string.tab_polls),
                 getResources().getDrawable(android.R.drawable.ic_menu_agenda));
         childView.setContent(R.id.pollsTab);
+        host.addTab(childView);
+        childView = host.newTabSpec("inventoryView");
+        createIndicator(host, childView, getString(R.string.inventory_tab),
+                getResources().getDrawable(android.R.drawable.ic_menu_gallery));
+        childView.setContent(R.id.inventoryTab);
         host.addTab(childView);
         childView = host.newTabSpec("statusView");
         createIndicator(host, childView, getString(R.string.tab_status),
@@ -86,12 +90,21 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         view.setOnItemClickListener(this);
     }
 
+    private void setupInventory() {
+        ListView view = (ListView) findViewById(R.id.inventoryTab);
+        inventoryAdapter = new SimpleCursorAdapter(this, R.layout.inventory_menu_item, null, new String[]{ITEM_NAME, ITEM_TYPE, ITEM_TYPE}, new int[]{R.id.item_name, R.id.item_type, R.id.item_type_icon}, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+        inventoryAdapter.setViewBinder(new InventoryBinder(getResources()));
+        view.setAdapter(inventoryAdapter);
+    }
+
+    SimpleCursorAdapter inventoryAdapter;
+
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         Bundle args = new Bundle();
         String pollName = ((TextView) view).getText().toString();
         args.putString(PollLoaderCallbacks.ARG_POLL_NAME, pollName);
-        getLoaderManager().restartLoader(1, args, pollLoaderCallbacks);
+        getLoaderManager().restartLoader(1, args, loaderCallbacks);
         // TODO move this to AsyncTask
         Cursor findChoice = GameDatabase.getPollDataByName(this, pollName);
         pollChoicesAdapter.setPlayerChoice(findChoice.getString(findChoice.getColumnIndex(CHOSEN)));
@@ -150,8 +163,11 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                 });
     }
 
-    public void updateVoteInfo() {
-        getLoaderManager().restartLoader(0, null, pollLoaderCallbacks);
+    public static final int LOADER_POLLS = 0;
+    public static final int LOADER_INVENTORY = 2;
+
+    public void updateInfo(int id) {
+        getLoaderManager().restartLoader(id, null, loaderCallbacks);
     }
 
     @Override
@@ -265,36 +281,63 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
 
         @Override
         public Loader<Cursor> onCreateLoader(int id, final Bundle args) {
-            if (id == 0)
-                return new SimpleCursorLoader(GameField.this) {
-                    @Override
-                    public Cursor loadInBackground() {
-                        return GameDatabase.getPolls(getContext());
-                    }
-                };
-            final String pollName = args.getString(ARG_POLL_NAME);
-            return new SimpleCursorLoader(GameField.this) {
-                @Override
-                public Cursor loadInBackground() {
-                    return GameDatabase.getPollOptions(GameField.this, pollName);
-                }
-            };
+            switch (id) {
+                case LOADER_POLLS:
+                    return new SimpleCursorLoader(GameField.this) {
+                        @Override
+                        public Cursor loadInBackground() {
+                            return GameDatabase.getPolls(getContext());
+                        }
+                    };
+                case 1:
+                    final String pollName = args.getString(ARG_POLL_NAME);
+                    return new SimpleCursorLoader(GameField.this) {
+                        @Override
+                        public Cursor loadInBackground() {
+                            return GameDatabase.getPollOptions(GameField.this, pollName);
+                        }
+                    };
+                case LOADER_INVENTORY:
+                    return new SimpleCursorLoader(GameField.this) {
+                        @Override
+                        public Cursor loadInBackground() {
+                            return GameDatabase.getInventory(GameField.this);
+                        }
+                    };
+                default:
+                    return null;
+            }
+
         }
 
         @Override
         public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-            if (loader.getId() == 0)
-                pollListAdapter.swapCursor(data);
-            else
-                pollChoicesAdapter.swapCursor(data);
+            switch (loader.getId()) {
+                case LOADER_POLLS:
+                    pollListAdapter.swapCursor(data);
+                    break;
+                case 1:
+                    pollChoicesAdapter.swapCursor(data);
+                    break;
+                case LOADER_INVENTORY:
+                    inventoryAdapter.swapCursor(data);
+                    break;
+            }
         }
 
         @Override
         public void onLoaderReset(Loader<Cursor> loader) {
-            if (loader.getId() == 0)
-                pollListAdapter.swapCursor(null);
-            else
-                pollChoicesAdapter.swapCursor(null);
+            switch (loader.getId()) {
+                case LOADER_POLLS:
+                    pollListAdapter.swapCursor(null);
+                    break;
+                case 1:
+                    pollChoicesAdapter.swapCursor(null);
+                    break;
+                case LOADER_INVENTORY:
+                    inventoryAdapter.swapCursor(null);
+                    break;
+            }
         }
     }
 

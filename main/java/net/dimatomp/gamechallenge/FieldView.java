@@ -68,7 +68,8 @@ public class FieldView extends View {
         tiles = new Bitmap[]{
                 ((BitmapDrawable) getResources().getDrawable(R.drawable.ground0)).getBitmap(),
                 ((BitmapDrawable) getResources().getDrawable(R.drawable.ground1)).getBitmap(),
-                ((BitmapDrawable) getResources().getDrawable(R.drawable.ground2)).getBitmap()
+                ((BitmapDrawable) getResources().getDrawable(R.drawable.ground2)).getBitmap(),
+                ((BitmapDrawable) getResources().getDrawable(R.drawable.shop)).getBitmap()
         };
         for (int i = 0; i < tiles.length; i++)
             tiles[i] = Bitmap.createScaledBitmap(tiles[i], sideLength, sideLength, false);

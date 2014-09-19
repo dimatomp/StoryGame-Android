@@ -21,4 +21,5 @@ public interface GameDatabaseColumns extends BaseColumns {
     String ITEM_NAME = "ItemName";
     String ITEM_TYPE = "ItemType";
     String ITEM_COST = "ItemCost";
+    String ITEM_COUNT = "ItemCount";
 }

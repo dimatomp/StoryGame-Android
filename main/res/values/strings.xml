@@ -22,4 +22,8 @@
     <string name="inventory_sell">Sell for\n%d gold</string>
     <string name="inventory_buy">Buy for\n%d gold</string>
     <string name="inventory_throw_out">Throw\nout</string>
+    <string name="inventory_tab">Inventory</string>
+    <string name="item_weapon">Weapon</string>
+    <string name="item_potion">Potion</string>
+    <string name="item_ore">Ore</string>
 </resources>
