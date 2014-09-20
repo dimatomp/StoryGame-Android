@@ -2,6 +2,7 @@ package net.dimatomp.gamechallenge;
 
 import android.content.Context;
 import android.database.DataSetObserver;
+import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.ArrayMap;
@@ -14,6 +15,7 @@ import android.widget.CursorAdapter;
 import android.widget.RadioButton;
 import android.widget.TextView;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -78,7 +80,10 @@ public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements Che
 
     private void updateChildren() {
         if (getChildCount() == 0) {
-            minimalAmounts = new ArrayMap<>();
+            if (Build.VERSION.SDK_INT >= 19)
+                minimalAmounts = new ArrayMap<>();
+            else
+                minimalAmounts = new HashMap<>();
             for (int i = 0; i < adapter.getCount(); i++) {
                 View newChild = adapter.getView(i, null, this);
                 minimalAmounts.put(((TextView) newChild).getText().toString(),
@@ -166,7 +171,10 @@ public class AdapterRadioGroup extends AdapterView<CursorAdapter> implements Che
     protected void onRestoreInstanceState(Parcelable state) {
         super.onRestoreInstanceState(null);
         SavedInstanceState savedInstanceState = (SavedInstanceState) state;
-        minimalAmounts = new ArrayMap<>();
+        if (Build.VERSION.SDK_INT >= 19)
+            minimalAmounts = new ArrayMap<>();
+        else
+            minimalAmounts = new HashMap<>();
         for (int i = 0; i < savedInstanceState.texts.length; i++) {
             RadioButton button = new RadioButton(getContext());
             button.setText(savedInstanceState.texts[i]);
