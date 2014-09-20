@@ -116,7 +116,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     private void setupInventory() {
         inventoryBinder = new InventoryBinder(getResources());
         ListView view = (ListView) findViewById(R.id.inventoryTab);
-        inventoryAdapter = new SimpleCursorAdapter(this, R.layout.inventory_menu_item, null, new String[]{ITEM_NAME, ITEM_TYPE, ITEM_TYPE, ITEM_COST}, new int[]{R.id.item_name, R.id.item_type, R.id.item_type_icon, R.id.item_remove_text}, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+        inventoryAdapter = new SimpleCursorAdapter(this, R.layout.inventory_menu_item, null, new String[]{ITEM_NAME, ITEM_TYPE, ITEM_TYPE, ITEM_COST, ITEM_COUNT}, new int[]{R.id.item_name, R.id.item_type, R.id.item_type_icon, R.id.item_remove_text, R.id.item_quantity}, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
         inventoryAdapter.setViewBinder(inventoryBinder);
         view.setAdapter(inventoryAdapter);
         view = (ListView) findViewById(R.id.storeList);

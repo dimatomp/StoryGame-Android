@@ -53,4 +53,12 @@
             android:textColorHint="@android:color/holo_red_light" />
     </FrameLayout>
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:id="@+id/item_quantity"
+        android:layout_alignBottom="@+id/item_name"
+        android:layout_toEndOf="@+id/item_name" />
+
 </RelativeLayout>

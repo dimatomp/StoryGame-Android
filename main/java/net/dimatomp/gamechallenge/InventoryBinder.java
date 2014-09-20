@@ -7,6 +7,8 @@ import android.widget.ImageView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
+import org.w3c.dom.Text;
+
 import static net.dimatomp.gamechallenge.GameDatabaseColumns.*;
 
 /**
@@ -44,7 +46,9 @@ public class InventoryBinder implements SimpleCursorAdapter.ViewBinder {
                             resources.getString(itemTypeRes[cursor.getInt(columnIndex)]));
                 break;
             case ITEM_COUNT:
-                // TODO Display it!
+                ((TextView) view).setText(String.format(
+                        resources.getString(R.string.inventory_quantity),
+                        cursor.getInt(columnIndex)));
                 break;
             case ITEM_COST:
                 ((TextView) view).setText(sellAvailable ? String.format(
