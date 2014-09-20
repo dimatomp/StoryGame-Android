@@ -18,16 +18,21 @@ import org.json.JSONObject;
 import java.net.URISyntaxException;
 import java.util.Map;
 
+import ru.ifmo.ctddev.games.messages.InventoryMessage;
 import ru.ifmo.ctddev.games.messages.JoinMessage;
 import ru.ifmo.ctddev.games.messages.MoveMessage;
 import ru.ifmo.ctddev.games.messages.MoveResponseMessage;
 import ru.ifmo.ctddev.games.messages.StartMessage;
+import ru.ifmo.ctddev.games.messages.StoreMessage;
 import ru.ifmo.ctddev.games.messages.UserVote;
 import ru.ifmo.ctddev.games.messages.VoteMessage;
 import ru.ifmo.ctddev.games.messages.VoteResponseMessage;
 import ru.ifmo.ctddev.games.messages.VotesInformationResponseMessage;
 import ru.ifmo.ctddev.games.state.InventoryItem;
+import ru.ifmo.ctddev.games.state.Item;
 import ru.ifmo.ctddev.games.state.Poll;
+
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.*;
 
 public class ServerConnectionHandler extends Service {
     private static final String TAG = "ServerConnectionHandler";
@@ -184,15 +189,14 @@ public class ServerConnectionHandler extends Service {
             }).on("vote_information", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
-                    if (connectionStatus == ConnectionStatus.SUCCESS) {
-                        GameDatabase.dropEverything(ServerConnectionHandler.this);
-                        VotesInformationResponseMessage message = mapper.convertValue(args[0], VotesInformationResponseMessage.class);
-                        for (Poll poll : message.getPolls()) {
-                            UserVote ansNumber = message.getVoted().get(poll.getId());
-                            GameDatabase.addPoll(ServerConnectionHandler.this, poll, ansNumber);
-                        }
-                        refreshGameField(GameField.LOADER_POLLS);
+                    GameDatabase.cleanupTable(ServerConnectionHandler.this, POLLS_TABLE);
+                    GameDatabase.cleanupTable(ServerConnectionHandler.this, VOTE_OPTIONS);
+                    VotesInformationResponseMessage message = mapper.convertValue(args[0], VotesInformationResponseMessage.class);
+                    for (Poll poll : message.getPolls()) {
+                        UserVote ansNumber = message.getVoted().get(poll.getId());
+                        GameDatabase.addPoll(ServerConnectionHandler.this, poll, ansNumber);
                     }
+                    refreshGameField(GameField.LOADER_POLLS);
                 }
             }).on("new_vote", new Emitter.Listener() {
                 @Override
@@ -204,14 +208,24 @@ public class ServerConnectionHandler extends Service {
             }).on("inventory", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
-                    Map<Integer, InventoryItem> items = mapper.convertValue(args[0], Map.class);
-                    GameDatabase.dropEverything(ServerConnectionHandler.this);
-                    for (InventoryItem item: items.values())
+                    InventoryMessage items = mapper.convertValue(args[0], InventoryMessage.class);
+                    GameDatabase.cleanupTable(ServerConnectionHandler.this, INVENTORY_TABLE);
+                    for (InventoryItem item: items.getInventory().values())
                         GameDatabase.addInvItem(ServerConnectionHandler.this, item);
                     refreshGameField(GameField.LOADER_INVENTORY);
                 }
+            }).on("store", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+                    StoreMessage message = mapper.convertValue(args[0], StoreMessage.class);
+                    GameDatabase.cleanupTable(ServerConnectionHandler.this, STORE_TABLE);
+                    if (message.isSuccess())
+                        for (Item item: message.getItems().values())
+                            GameDatabase.addStoreItem(ServerConnectionHandler.this, item);
+                    refreshGameField(GameField.LOADER_STORE);
+                }
             });
-=
+
             socket.connect();
         }
 
@@ -233,6 +247,14 @@ public class ServerConnectionHandler extends Service {
         public void sendMoveRequest(int dx, int dy) {
             MoveMessage message = new MoveMessage(dx, dy);
             socket.emit("move_request", mapper.convertValue(message, JSONObject.class));
+        }
+
+        public void requestStore() {
+            socket.emit("get_store");
+        }
+
+        public void logOut() {
+            socket.disconnect();
         }
 
         public StartMessage getStartInfo() {

@@ -9,6 +9,7 @@ import android.util.Log;
 
 import ru.ifmo.ctddev.games.messages.UserVote;
 import ru.ifmo.ctddev.games.state.InventoryItem;
+import ru.ifmo.ctddev.games.state.Item;
 import ru.ifmo.ctddev.games.state.Poll;
 
 import static net.dimatomp.gamechallenge.GameDatabaseColumns.*;
@@ -39,13 +40,18 @@ public class GameDatabase extends SQLiteOpenHelper {
         db.execSQL("DELETE FROM " + POLLS_TABLE + ";");
         db.execSQL("DELETE FROM " + VOTE_OPTIONS + ";");
         db.execSQL("DELETE FROM " + INVENTORY_TABLE + ";");
+        db.execSQL("DELETE FROM " + STORE_TABLE + ";");
+    }
+
+    public static void cleanupTable(Context context, String name) {
+        getInstance(context).getWritableDatabase().execSQL("DELETE FROM " + name + ";");
     }
 
     public static void addInvItem(Context context, InventoryItem item) {
         Cursor cursor = getInstance(context).getReadableDatabase()
                 .query(INVENTORY_TABLE, new String[]{ITEM_COUNT},
                         ITEM_NAME + " = '" + item.getName() + "'", null, null, null, null);
-        boolean alreadyExists = (cursor.getColumnCount() > 0);
+        boolean alreadyExists = (cursor.getCount() > 0);
         SQLiteDatabase db = getInstance(context).getWritableDatabase();
         ContentValues values = new ContentValues();
         if (!alreadyExists) {
@@ -59,6 +65,22 @@ public class GameDatabase extends SQLiteOpenHelper {
             values.put(ITEM_COUNT, item.getCount() + cursor.getInt(cursor.getColumnIndex(ITEM_COUNT)));
             db.update(INVENTORY_TABLE, values, ITEM_NAME + " = '" + item.getName() + "'", null);
         }
+    }
+
+    public static void addStoreItem(Context context, Item item) {
+        SQLiteDatabase db = getInstance(context).getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(GOODS_NAME, item.getName());
+        values.put(GOODS_TYPE, item.getType());
+        values.put(GOODS_COST_BUY, item.getCostBuy());
+        values.put(GOODS_COST_SELL, item.getCostSell());
+        db.insert(STORE_TABLE, null, values);
+    }
+
+    public static final String[] STORE_COLUMNS = new String[]{_ID, GOODS_NAME, GOODS_TYPE, GOODS_COST_BUY, GOODS_COST_SELL};
+
+    public static Cursor getStore(Context context) {
+        return getInstance(context).getReadableDatabase().query(STORE_TABLE, STORE_COLUMNS, null, null, null, null, null);
     }
 
     public static final String[] INVENTORY_COLUMNS = new String[]{_ID, ITEM_NAME, ITEM_TYPE, ITEM_COUNT, ITEM_COST};
@@ -127,7 +149,6 @@ public class GameDatabase extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
-        // TODO add foreign keys
         db.execSQL("CREATE TABLE " + POLLS_TABLE + " (" +
                 _ID + " INTEGER PRIMARY KEY, " +
                 TITLE + " TEXT NOT NULL, " +
@@ -145,5 +166,11 @@ public class GameDatabase extends SQLiteOpenHelper {
                 ITEM_TYPE + " INTEGER NOT NULL, " +
                 ITEM_COST + " INTEGER NOT NULL, " +
                 ITEM_COUNT + " INTEGER NOT NULL);");
+        db.execSQL("CREATE TABLE " + STORE_TABLE + " (" +
+                _ID + " INTEGER PRIMARY KEY, " +
+                GOODS_NAME + " TEXT NOT NULL UNIQUE, " +
+                GOODS_TYPE + " INTEGER NOT NULL, " +
+                GOODS_COST_BUY + " INTEGER NOT NULL, " +
+                GOODS_COST_SELL + " INTEGER NOT NULL);");
     }
 }

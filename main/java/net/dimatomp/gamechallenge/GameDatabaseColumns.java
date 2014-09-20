@@ -22,4 +22,10 @@ public interface GameDatabaseColumns extends BaseColumns {
     String ITEM_TYPE = "ItemType";
     String ITEM_COST = "ItemCost";
     String ITEM_COUNT = "ItemCount";
+
+    String STORE_TABLE = "store_table";
+    String GOODS_NAME = "StoreItemName";
+    String GOODS_TYPE = "StoreItemType";
+    String GOODS_COST_BUY = "BuyCost";
+    String GOODS_COST_SELL = "SellCost";
 }

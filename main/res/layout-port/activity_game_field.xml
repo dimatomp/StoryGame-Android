@@ -37,6 +37,25 @@
                 android:layout_height="match_parent" />
 
             <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:id="@+id/storeTab">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="fill_parent"
+                    android:gravity="center"
+                    android:id="@+id/store_not_available_text"
+                    android:hint="@string/store_not_available"/>
+
+                <ListView
+                    android:layout_width="match_parent"
+                    android:layout_height="fill_parent"
+                    android:id="@+id/storeList"/>
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/statusView"
                 android:layout_width="fill_parent"
                 android:layout_height="fill_parent"

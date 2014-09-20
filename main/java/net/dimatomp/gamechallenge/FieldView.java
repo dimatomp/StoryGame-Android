@@ -79,6 +79,12 @@ public class FieldView extends View {
         if (field != null && (this.field == null || sizeChanged || this.field.length != field.length || this.field[0].length != field.length))
             loadTileImages(Math.min(getWidth() / field.length, getHeight() / field[0].length));
         this.field = field;
+        if (field != null) {
+            if (field[field.length / 2][field.length / 2] == 3)
+                ((GameField) getContext()).setStoreVisible(true);
+            else if (((GameField) getContext()).isStoreVisible())
+                ((GameField) getContext()).setStoreVisible(false);
+        }
         invalidate();
     }
 

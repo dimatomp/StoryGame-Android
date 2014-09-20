@@ -35,6 +35,8 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     private static final String SAVED_INSTANCE_FIELD = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_FIELD";
     private static final String SAVED_INSTANCE_DIALOG = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_DIALOG";
     private static final String SAVED_INSTANCE_DIALOG_SHOWN = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_DIALOG_SHOWN";
+    private static final String SAVED_INSTANCE_TAB_NUMBER = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_TAB_NUMBER";
+    private static final String SAVED_INSTANCE_TABBAR_SHOWN = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_TABBAR_SHOWN";
     FieldView field;
     boolean justStarted;
     SimpleCursorAdapter pollListAdapter;
@@ -46,6 +48,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     MoneyPicker dialogPicker;
     private HandlerConnection connection = new HandlerConnection();
     private String dialogShown;
+    private InventoryBinder inventoryBinder;
 
     private void setupTabs() {
         TabHost host = (TabHost) findViewById(R.id.tabHost);
@@ -62,8 +65,13 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         host.addTab(childView);
         childView = host.newTabSpec("inventoryView");
         createIndicator(host, childView, getString(R.string.inventory_tab),
-                getResources().getDrawable(android.R.drawable.ic_menu_gallery));
+                getResources().getDrawable(android.R.drawable.ic_lock_lock));
         childView.setContent(R.id.inventoryTab);
+        host.addTab(childView);
+        childView = host.newTabSpec("storeView");
+        createIndicator(host, childView, getString(R.string.tab_store),
+                getResources().getDrawable(R.drawable.ic_action_paste));
+        childView.setContent(R.id.storeTab);
         host.addTab(childView);
         childView = host.newTabSpec("statusView");
         createIndicator(host, childView, getString(R.string.tab_status),
@@ -73,6 +81,22 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
 
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)
             host.getTabWidget().setOrientation(LinearLayout.VERTICAL);
+    }
+
+    public void setStoreVisible(boolean visible) {
+        TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
+        tabHost.getTabWidget().getChildAt(3).setVisibility(visible ? View.VISIBLE : View.GONE);
+        if (visible)
+            connection.requestStore();
+        boolean notifyChanged = (visible != inventoryBinder.isSellAvailable());
+        inventoryBinder.setSellAvailable(visible);
+        if (notifyChanged)
+            inventoryAdapter.notifyDataSetChanged();
+    }
+
+    public boolean isStoreVisible() {
+        TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
+        return tabHost.getTabWidget().getChildAt(3).getVisibility() == View.VISIBLE;
     }
 
     private void createIndicator(TabHost host, TabHost.TabSpec childView, String text, Drawable icon) {
@@ -91,13 +115,18 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     }
 
     private void setupInventory() {
+        inventoryBinder = new InventoryBinder(getResources());
         ListView view = (ListView) findViewById(R.id.inventoryTab);
-        inventoryAdapter = new SimpleCursorAdapter(this, R.layout.inventory_menu_item, null, new String[]{ITEM_NAME, ITEM_TYPE, ITEM_TYPE}, new int[]{R.id.item_name, R.id.item_type, R.id.item_type_icon}, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
-        inventoryAdapter.setViewBinder(new InventoryBinder(getResources()));
+        inventoryAdapter = new SimpleCursorAdapter(this, R.layout.inventory_menu_item, null, new String[]{ITEM_NAME, ITEM_TYPE, ITEM_TYPE, ITEM_COST}, new int[]{R.id.item_name, R.id.item_type, R.id.item_type_icon, R.id.item_remove_text}, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+        inventoryAdapter.setViewBinder(inventoryBinder);
         view.setAdapter(inventoryAdapter);
+        view = (ListView) findViewById(R.id.storeList);
+        storeAdapter = new SimpleCursorAdapter(this, R.layout.inventory_menu_item, null, new String[]{GOODS_NAME, GOODS_TYPE, GOODS_TYPE, GOODS_COST_BUY}, new int[]{R.id.item_name, R.id.item_type, R.id.item_type_icon, R.id.item_remove_text}, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+        storeAdapter.setViewBinder(new StoreBinder(getResources()));
+        view.setAdapter(storeAdapter);
     }
 
-    SimpleCursorAdapter inventoryAdapter;
+    SimpleCursorAdapter inventoryAdapter, storeAdapter;
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -165,6 +194,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
 
     public static final int LOADER_POLLS = 0;
     public static final int LOADER_INVENTORY = 2;
+    public static final int LOADER_STORE = 3;
 
     public void updateInfo(int id) {
         getLoaderManager().restartLoader(id, null, loaderCallbacks);
@@ -185,6 +215,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         pollChoicesAdapter = new RadioGroupAdapter(this, CursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
         setupVotesList();
         setupVoteDialog();
+        setupInventory();
 
         field = (FieldView) findViewById(R.id.fieldView);
         if (savedInstanceState != null) {
@@ -194,9 +225,16 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                 pollChoiceDialog = pollChoiceDialogBuilder.setView(getDialogView()).create();
                 pollChoiceDialog.onRestoreInstanceState(savedInstanceState.getBundle(SAVED_INSTANCE_DIALOG));
             }
+            TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
+            tabHost.setCurrentTab(savedInstanceState.getInt(SAVED_INSTANCE_TAB_NUMBER));
+            tabHost.getTabWidget().setVisibility(savedInstanceState.getBoolean(SAVED_INSTANCE_TABBAR_SHOWN) ? View.VISIBLE : View.GONE);
             justStarted = false;
         } else
             justStarted = true;
+
+        getLoaderManager().initLoader(LOADER_POLLS, null, loaderCallbacks);
+        getLoaderManager().initLoader(LOADER_INVENTORY, null, loaderCallbacks);
+        getLoaderManager().initLoader(LOADER_STORE, null, loaderCallbacks);
     }
 
     @Override
@@ -221,6 +259,9 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
             outState.putString(SAVED_INSTANCE_DIALOG_SHOWN, dialogShown);
             outState.putBundle(SAVED_INSTANCE_DIALOG, pollChoiceDialog.onSaveInstanceState());
         }
+        TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
+        outState.putInt(SAVED_INSTANCE_TAB_NUMBER, tabHost.getCurrentTab());
+        outState.putBoolean(SAVED_INSTANCE_TABBAR_SHOWN, tabHost.getTabWidget().getVisibility() == View.VISIBLE);
     }
 
     @Override
@@ -250,11 +291,14 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
             else
                 widget.setVisibility(View.GONE);
         }
+        if (keyCode == KeyEvent.KEYCODE_BACK)
+            connection.logOut();
         super.onKeyDown(keyCode, event);
         return true;
     }
 
     public void finish(View view) {
+        connection.logOut();
         finish();
     }
 
@@ -286,7 +330,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                     return new SimpleCursorLoader(GameField.this) {
                         @Override
                         public Cursor loadInBackground() {
-                            return GameDatabase.getPolls(getContext());
+                            return GameDatabase.getPolls(GameField.this);
                         }
                     };
                 case 1:
@@ -302,6 +346,13 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                         @Override
                         public Cursor loadInBackground() {
                             return GameDatabase.getInventory(GameField.this);
+                        }
+                    };
+                case LOADER_STORE:
+                    return new SimpleCursorLoader(GameField.this) {
+                        @Override
+                        public Cursor loadInBackground() {
+                            return GameDatabase.getStore(GameField.this);
                         }
                     };
                 default:
@@ -322,6 +373,13 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                 case LOADER_INVENTORY:
                     inventoryAdapter.swapCursor(data);
                     break;
+                case LOADER_STORE:
+                    storeAdapter.swapCursor(data);
+                    if (data == null || data.getCount() == 0)
+                        findViewById(R.id.store_not_available_text).setVisibility(View.VISIBLE);
+                    else
+                        findViewById(R.id.store_not_available_text).setVisibility(View.GONE);
+                    break;
             }
         }
 
@@ -337,6 +395,9 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                 case LOADER_INVENTORY:
                     inventoryAdapter.swapCursor(null);
                     break;
+                case LOADER_STORE:
+                    storeAdapter.swapCursor(null);
+                    break;
             }
         }
     }
@@ -345,19 +406,68 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         ServerConnectionHandler.ServerConnectionBinder service;
 
         @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
+        public synchronized void onServiceConnected(ComponentName name, IBinder service) {
             this.service = (ServerConnectionHandler.ServerConnectionBinder) service;
             this.service.setGameField(GameField.this);
             if (justStarted)
                 field.setField(this.service.getStartInfo().getField(), false);
+            notifyAll();
         }
 
-        public void sendVoteMessage(String optionName, int amount) {
-            service.sendVoteMessage(dialogShown, optionName, amount);
+        private void runWhenConnected(final Runnable runnable) {
+            if (service == null)
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        String dialogShown = GameField.this.dialogShown;
+                        synchronized (HandlerConnection.this) {
+                            while (service == null)
+                                try {
+                                    wait();
+                                } catch (InterruptedException ignore) {}
+                        }
+                        runnable.run();
+                    }
+                });
+            else
+                runnable.run();
         }
 
-        public void sendMoveRequest(MoveDirection direction) {
-            service.sendMoveRequest(direction.dx, direction.dy);
+        public void sendVoteMessage(final String optionName, final int amount) {
+            final String dialogShown = GameField.this.dialogShown;
+            runWhenConnected(new Runnable() {
+                @Override
+                public void run() {
+                    service.sendVoteMessage(dialogShown, optionName, amount);
+                }
+            });
+        }
+
+        public void sendMoveRequest(final MoveDirection direction) {
+            runWhenConnected(new Runnable() {
+                @Override
+                public void run() {
+                    service.sendMoveRequest(direction.dx, direction.dy);
+                }
+            });
+        }
+
+        public void requestStore() {
+            runWhenConnected(new Runnable() {
+                @Override
+                public void run() {
+                    service.requestStore();
+                }
+            });
+        }
+
+        public void logOut() {
+            runWhenConnected(new Runnable() {
+                @Override
+                public void run() {
+                    service.logOut();
+                }
+            });
         }
 
         @Override
