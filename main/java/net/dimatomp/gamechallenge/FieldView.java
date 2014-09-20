@@ -14,6 +14,8 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.LevelListDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.PathShape;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -47,14 +49,14 @@ public class FieldView extends View {
     private boolean alreadyMoved, moving;
     private ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private GestureDetector longPressDetector;
-    private HashMap<String, Coordinate> players;
+    private Map<String, Coordinate> players;
     private String userName;
 
     public void setUserName(String name) {
         userName = name;
     }
 
-    class Coordinate {
+    static class Coordinate {
         int x, y;
 
         Coordinate(int x, int y) {
@@ -87,6 +89,67 @@ public class FieldView extends View {
         arrowPaint.setStrokeWidth(getResources().getDimension(R.dimen.circle_thickness));
         longPressDetector = new GestureDetector(getContext(), new OnLongPressListener());
         players = new HashMap<>();
+    }
+
+    @Override
+    protected Parcelable onSaveInstanceState() {
+        super.onSaveInstanceState();
+        return new SavedInstanceState(field, players);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        super.onRestoreInstanceState(null);
+        players = ((SavedInstanceState) state).players;
+        setField(((SavedInstanceState) state).field, false);
+    }
+
+    static class SavedInstanceState implements Parcelable {
+        int[][] field;
+        Map<String, Coordinate> players;
+
+        SavedInstanceState(int[][] field, Map<String, Coordinate> players) {
+            this.field = field;
+            this.players = players;
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeInt(field.length);
+            dest.writeInt(field[0].length);
+            for (int[] a: field)
+                dest.writeIntArray(a);
+            dest.writeInt(players.size());
+            for (Map.Entry<String, Coordinate> entry: players.entrySet()) {
+                dest.writeString(entry.getKey());
+                dest.writeInt(entry.getValue().x);
+                dest.writeInt(entry.getValue().y);
+            }
+        }
+
+        public static final Creator<SavedInstanceState> CREATOR = new Creator<SavedInstanceState>() {
+            @Override
+            public SavedInstanceState createFromParcel(Parcel source) {
+                int[][] field = new int[source.readInt()][source.readInt()];
+                for (int i = 0; i < field.length; i++)
+                    source.readIntArray(field[i]);
+                Map<String, Coordinate> players = new HashMap<>();
+                for (int i = source.readInt(); i > 0; i--) {
+                    players.put(source.readString(), new Coordinate(source.readInt(), source.readInt()));
+                }
+                return new SavedInstanceState(field, players);
+            }
+
+            @Override
+            public SavedInstanceState[] newArray(int size) {
+                return new SavedInstanceState[size];
+            }
+        };
     }
 
     private void loadTileImages(int sideLength) {

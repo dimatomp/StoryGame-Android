@@ -32,7 +32,6 @@ import static net.dimatomp.gamechallenge.GameDatabaseColumns.*;
 
 public class GameField extends Activity implements AdapterView.OnItemClickListener {
     private static final String TAG = "GameField";
-    private static final String SAVED_INSTANCE_FIELD = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_FIELD";
     private static final String SAVED_INSTANCE_DIALOG = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_DIALOG";
     private static final String SAVED_INSTANCE_DIALOG_SHOWN = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_DIALOG_SHOWN";
     private static final String SAVED_INSTANCE_TAB_NUMBER = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_TAB_NUMBER";
@@ -219,7 +218,6 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
 
         field = (FieldView) findViewById(R.id.fieldView);
         if (savedInstanceState != null) {
-            field.setField((int[][]) savedInstanceState.getSerializable(SAVED_INSTANCE_FIELD), false);
             if (savedInstanceState.containsKey(SAVED_INSTANCE_DIALOG_SHOWN)) {
                 dialogShown = savedInstanceState.getString(SAVED_INSTANCE_DIALOG_SHOWN);
                 pollChoiceDialog = pollChoiceDialogBuilder.setView(getDialogView()).create();
@@ -254,7 +252,6 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putSerializable(SAVED_INSTANCE_FIELD, field.getField());
         if (dialogShown != null) {
             outState.putString(SAVED_INSTANCE_DIALOG_SHOWN, dialogShown);
             outState.putBundle(SAVED_INSTANCE_DIALOG, pollChoiceDialog.onSaveInstanceState());
@@ -423,8 +420,6 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
             this.service.setGameField(GameField.this);
             if (justStarted)
                 field.setField(this.service.getStartInfo().getField(), false);
-            else
-                this.service.requestUserInfo();
             field.setUserName(this.service.getUserName());
             notifyAll();
         }
@@ -434,7 +429,6 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
-                        String dialogShown = GameField.this.dialogShown;
                         synchronized (HandlerConnection.this) {
                             while (service == null)
                                 try {
