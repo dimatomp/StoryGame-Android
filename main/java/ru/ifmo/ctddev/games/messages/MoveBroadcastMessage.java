@@ -8,6 +8,9 @@ public class MoveBroadcastMessage {
     int x, y;
     int dx, dy;
 
+    public MoveBroadcastMessage() {
+    }
+
     public MoveBroadcastMessage(String userName, int x, int y, int dx, int dy) {
         this.userName = userName;
         this.x = x;

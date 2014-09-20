@@ -423,6 +423,8 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
             this.service.setGameField(GameField.this);
             if (justStarted)
                 field.setField(this.service.getStartInfo().getField(), false);
+            else
+                this.service.requestUserInfo();
             field.setUserName(this.service.getUserName());
             notifyAll();
         }
@@ -445,6 +447,8 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
             else
                 runnable.run();
         }
+
+
 
         public void sendVoteMessage(final String optionName, final int amount) {
             final String dialogShown = GameField.this.dialogShown;

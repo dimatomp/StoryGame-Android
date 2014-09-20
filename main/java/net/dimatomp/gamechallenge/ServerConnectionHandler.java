@@ -147,6 +147,7 @@ public class ServerConnectionHandler extends Service {
                         });
                         socket.emit("vote_information");
                         socket.emit("get_inventory");
+                        socket.emit("get_state");
                     } else {
                         connectionStatus = ConnectionStatus.FAILED_TO_JOIN;
                         showLoginErrorMessage(R.string.error_server_refused);
@@ -289,7 +290,14 @@ public class ServerConnectionHandler extends Service {
             }).on("state", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
-                    StateMessage message = mapper.convertValue(args[0], StateMessage.class);
+                    final StateMessage message = mapper.convertValue(args[0], StateMessage.class);
+                    if (gameField != null)
+                        gameField.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                gameField.receiveUserInfoMessage(userName, message.getX(), message.getY());
+                            }
+                        });
                 }
             });
 
@@ -322,6 +330,10 @@ public class ServerConnectionHandler extends Service {
 
         public void sendDigEvent() {
             socket.emit("dig");
+        }
+
+        public void requestUserInfo() {
+            socket.emit("get_state");
         }
 
         public void logOut() {

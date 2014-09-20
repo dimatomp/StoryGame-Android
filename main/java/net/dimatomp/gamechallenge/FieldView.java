@@ -310,7 +310,11 @@ public class FieldView extends View {
                     xDown = event.getX();
                     yDown = event.getY();
                     sendMoveRequest();
-                    longPressDetector.onTouchEvent(event);
+                    if (!(rectUp.contains(event.getX(), event.getY()) ||
+                            rectLeft.contains(event.getX(), event.getY()) ||
+                            rectDown.contains(event.getX(), event.getY()) ||
+                            rectRight.contains(event.getX(), event.getY())))
+                        longPressDetector.onTouchEvent(event);
                     break;
                 case MotionEvent.ACTION_UP:
                     moving = false;
@@ -325,8 +329,8 @@ public class FieldView extends View {
         if (!name.equals(userName)) {
             Coordinate old = players.get(name);
             Coordinate mine = players.get(userName);
-            if (Math.abs(old.x - x) < field.length / 2 || Math.abs(old.y - y) < field.length / 2 ||
-                    Math.abs(mine.x - x) < field.length / 2 || Math.abs(mine.y - y) < field.length / 2)
+            if (old == null || (mine != null && (Math.abs(old.x - x) < field.length / 2 || Math.abs(old.y - y) < field.length / 2 ||
+                    Math.abs(mine.x - x) < field.length / 2 || Math.abs(mine.y - y) < field.length / 2)))
                 invalid = true;
         }
         players.put(name, new Coordinate(x, y));
@@ -338,7 +342,7 @@ public class FieldView extends View {
     public void removeUser(String name) {
         Coordinate cur = players.get(name);
         Coordinate mine = players.get(userName);
-        boolean invalid = (Math.abs(cur.x - mine.x) < field.length / 2 || Math.abs(cur.y - mine.y) < field.length / 2);
+        boolean invalid = cur != null && mine != null && (Math.abs(cur.x - mine.x) < field.length / 2 || Math.abs(cur.y - mine.y) < field.length / 2);
         players.remove(name);
         if (invalid)
             // TODO invalidateRect?
@@ -363,14 +367,15 @@ public class FieldView extends View {
                         tiles[field[i][j]].setBounds(sideLength * i, sideLength * j, sideLength * (i + 1), sideLength * (j + 1));
                     tiles[field[i][j]].draw(canvas);
                 }
+            Coordinate myCrd = players.get(userName);
+            if (myCrd != null)
+                for (Map.Entry<String, Coordinate> entry: players.entrySet()) {
+                    int screenX = sideLength * (entry.getValue().x - myCrd.x + field.length / 2);
+                    int screenY = sideLength * (entry.getValue().y - myCrd.y + field[0].length / 2);
+                    canvas.drawBitmap(player, screenX, screenY, null);
+                    canvas.drawText(entry.getKey(), screenX, screenY, textPaint);
+                }
             canvas.restore();
-        }
-        Coordinate myCrd = players.get(userName);
-        for (Map.Entry<String, Coordinate> entry: players.entrySet()) {
-            int screenX = sideLength * (entry.getValue().x - myCrd.x + field.length / 2);
-            int screenY = sideLength * (entry.getValue().y - myCrd.y + field[0].length / 2);
-            canvas.drawBitmap(player, screenX, screenY, null);
-            canvas.drawText(entry.getKey(), screenX, screenY, textPaint);
         }
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)
             landscapeArrowPad.draw(canvas);
@@ -428,6 +433,9 @@ public class FieldView extends View {
                             newField = null;
                             break;
                     }
+                    Coordinate crd = players.get(userName);
+                    crd.x += direction.dx;
+                    crd.y += direction.dy;
                     setField(newField, false);
                     handleNextMove(true);
                 }
