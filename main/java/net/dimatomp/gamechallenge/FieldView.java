@@ -296,10 +296,10 @@ public class FieldView extends View {
                     alreadyMoved = true;
                     Log.d(TAG, "Sending move request, orientation: portrait");
                     if (Math.abs(dx) > Math.abs(dy)) {
-                        field.sendMoveMessage(dx > 0 ? MoveDirection.RIGHT : MoveDirection.LEFT);
+                        field.sendMoveMessage(dx > 0 ? MoveDirection.DOWN : MoveDirection.UP);
                         portraitArrow.setLevel(dx > 0 ? 2 : 4);
                     } else {
-                        field.sendMoveMessage(dy > 0 ? MoveDirection.DOWN : MoveDirection.UP);
+                        field.sendMoveMessage(dy > 0 ? MoveDirection.RIGHT : MoveDirection.LEFT);
                         portraitArrow.setLevel(dy > 0 ? 3 : 5);
                     }
                 } else
@@ -310,13 +310,13 @@ public class FieldView extends View {
                 if (rectUp == null || rectLeft == null || rectRight == null || rectDown == null)
                     updateRects();
                 if (rectUp.contains(xDown, yDown))
-                    field.sendMoveMessage(MoveDirection.UP);
-                else if (rectLeft.contains(xDown, yDown))
                     field.sendMoveMessage(MoveDirection.LEFT);
+                else if (rectLeft.contains(xDown, yDown))
+                    field.sendMoveMessage(MoveDirection.UP);
                 else if (rectRight.contains(xDown, yDown))
-                    field.sendMoveMessage(MoveDirection.RIGHT);
-                else if (rectDown.contains(xDown, yDown))
                     field.sendMoveMessage(MoveDirection.DOWN);
+                else if (rectDown.contains(xDown, yDown))
+                    field.sendMoveMessage(MoveDirection.RIGHT);
                 else
                     alreadyMoved = false;
                 if (alreadyMoved)
@@ -424,10 +424,11 @@ public class FieldView extends View {
             for (int i = 0; i < field.length; i++)
                 for (int j = 0; j < field[i].length; j++) {
                     if (field[i][j] < 2 || field[i][j] == 3)
-                        tiles[field[i][j]].setBounds(sideLength * i - sideLength / 8, sideLength * j - sideLength / 8,
-                                sideLength * (i + 1) + sideLength / 8, sideLength * (j + 1) + sideLength / 8);
+                        tiles[field[i][j]].setBounds(sideLength * j - sideLength / 8, sideLength * i - sideLength / 8,
+                                sideLength * (j + 1) + sideLength / 8, sideLength * (i + 1) + sideLength / 8);
                     else
-                        tiles[field[i][j]].setBounds(sideLength * i, sideLength * j, sideLength * (i + 1), sideLength * (j + 1));
+                        tiles[field[i][j]].setBounds(sideLength * j, sideLength * i,
+                                sideLength * (j + 1), sideLength * (i + 1));
                     tiles[field[i][j]].draw(canvas);
                 }
             Coordinate myCrd = players.get(userName);
@@ -435,8 +436,8 @@ public class FieldView extends View {
                 for (Map.Entry<String, Coordinate> entry: players.entrySet()) {
                     int screenX = sideLength * (entry.getValue().x - myCrd.x + field.length / 2);
                     int screenY = sideLength * (entry.getValue().y - myCrd.y + field[0].length / 2);
-                    canvas.drawBitmap(player, screenX, screenY, null);
-                    canvas.drawText(entry.getKey(), screenX, screenY, textPaint);
+                    canvas.drawBitmap(player, screenY, screenX, null);
+                    canvas.drawText(entry.getKey(), screenY, screenX, textPaint);
                 }
             canvas.restore();
         }

@@ -348,7 +348,6 @@ public class ServerConnectionHandler extends Service {
 
 /*
  * What remains:
- *  - show other players
  *  - show status
  *  - throw out objects
  *  - sell objects
