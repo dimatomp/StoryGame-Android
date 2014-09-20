@@ -264,6 +264,14 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         outState.putBoolean(SAVED_INSTANCE_TABBAR_SHOWN, tabHost.getTabWidget().getVisibility() == View.VISIBLE);
     }
 
+    public void receiveUserInfoMessage(String name, int x, int y) {
+        field.applyUserPos(name, x, y);
+    }
+
+    public void receiveUserRemoval(String name) {
+        field.removeUser(name);
+    }
+
     @Override
     protected void onDestroy() {
         unbindService(connection);
@@ -402,6 +410,10 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         }
     }
 
+    public void sendDigEvent() {
+        connection.sendDigEvent();
+    }
+
     private class HandlerConnection implements ServiceConnection {
         ServerConnectionHandler.ServerConnectionBinder service;
 
@@ -411,6 +423,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
             this.service.setGameField(GameField.this);
             if (justStarted)
                 field.setField(this.service.getStartInfo().getField(), false);
+            field.setUserName(this.service.getUserName());
             notifyAll();
         }
 
@@ -448,6 +461,15 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                 @Override
                 public void run() {
                     service.sendMoveRequest(direction.dx, direction.dy);
+                }
+            });
+        }
+
+        public void sendDigEvent() {
+            runWhenConnected(new Runnable() {
+                @Override
+                public void run() {
+                    service.sendDigEvent();
                 }
             });
         }

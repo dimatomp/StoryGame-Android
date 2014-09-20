@@ -5,7 +5,9 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.Vibrator;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
@@ -18,12 +20,17 @@ import org.json.JSONObject;
 import java.net.URISyntaxException;
 import java.util.Map;
 
+import ru.ifmo.ctddev.games.messages.DigResponseMessage;
 import ru.ifmo.ctddev.games.messages.InventoryMessage;
 import ru.ifmo.ctddev.games.messages.JoinMessage;
+import ru.ifmo.ctddev.games.messages.MoveBroadcastMessage;
 import ru.ifmo.ctddev.games.messages.MoveMessage;
 import ru.ifmo.ctddev.games.messages.MoveResponseMessage;
 import ru.ifmo.ctddev.games.messages.StartMessage;
+import ru.ifmo.ctddev.games.messages.StateMessage;
 import ru.ifmo.ctddev.games.messages.StoreMessage;
+import ru.ifmo.ctddev.games.messages.UserDisjoinedBroadcastMessage;
+import ru.ifmo.ctddev.games.messages.UserJoinedBroadcastMessage;
 import ru.ifmo.ctddev.games.messages.UserVote;
 import ru.ifmo.ctddev.games.messages.VoteMessage;
 import ru.ifmo.ctddev.games.messages.VoteResponseMessage;
@@ -72,6 +79,7 @@ public class ServerConnectionHandler extends Service {
         private ConnectionStatus connectionStatus = ConnectionStatus.IDLE;
         private LoginForm loginForm;
         private GameField gameField;
+        private String userName;
 
         void showLoginErrorMessage(final int res) {
             if (loginForm != null)
@@ -105,6 +113,10 @@ public class ServerConnectionHandler extends Service {
             return connectionStatus == ConnectionStatus.JOINING_IN;
         }
 
+        public String getUserName() {
+            return userName;
+        }
+
         public void logIn(String serverAddress, final String userName) {
             if (socket != null) {
                 Log.w(TAG, "There already was another Socket.io connection - forgetting about it.");
@@ -118,6 +130,7 @@ public class ServerConnectionHandler extends Service {
                 showLoginErrorMessage(R.string.error_bad_server_address);
                 return;
             }
+            this.userName = userName;
             socket.on("start", new Emitter.Listener() {
                 @Override
                 public void call(final Object... args) {
@@ -172,6 +185,7 @@ public class ServerConnectionHandler extends Service {
                 @Override
                 public void call(Object... args) {
                     Log.i(TAG, "Disconnecting.");
+                    stopSelf();
                 }
             }).on("move_response", new Emitter.Listener() {
                 @Override
@@ -224,6 +238,59 @@ public class ServerConnectionHandler extends Service {
                             GameDatabase.addStoreItem(ServerConnectionHandler.this, item);
                     refreshGameField(GameField.LOADER_STORE);
                 }
+            }).on("dig_response", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+                    DigResponseMessage message = mapper.convertValue(args[0], DigResponseMessage.class);
+                    if (message.getCount() > 0) {
+                        GameDatabase.addInvItem(ServerConnectionHandler.this, new InventoryItem(
+                                message.getItemId(), message.getName(), message.getCostSell(),
+                                message.getType(), message.getCount()));
+                        refreshGameField(GameField.LOADER_INVENTORY);
+                    }
+                    ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(100);
+                }
+            }).on("user_joined", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+                    final UserJoinedBroadcastMessage message = mapper.convertValue(args[0], UserJoinedBroadcastMessage.class);
+                    if (gameField != null)
+                        gameField.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                gameField.receiveUserInfoMessage(message.getUserName(), message.getX(), message.getY());
+                            }
+                        });
+                }
+            }).on("move", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+                    final MoveBroadcastMessage message = mapper.convertValue(args[0], MoveBroadcastMessage.class);
+                    if (gameField != null)
+                        gameField.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                gameField.receiveUserInfoMessage(message.getUserName(), message.getX() + message.getDx(), message.getY() + message.getDy());
+                            }
+                        });
+                }
+            }).on("user_disjoined", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+                    final UserDisjoinedBroadcastMessage message = mapper.convertValue(args[0], UserDisjoinedBroadcastMessage.class);
+                    if (gameField != null)
+                        gameField.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                gameField.receiveUserRemoval(message.getUserName());
+                            }
+                        });
+                }
+            }).on("state", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+                    StateMessage message = mapper.convertValue(args[0], StateMessage.class);
+                }
             });
 
             socket.connect();
@@ -253,6 +320,10 @@ public class ServerConnectionHandler extends Service {
             socket.emit("get_store");
         }
 
+        public void sendDigEvent() {
+            socket.emit("dig");
+        }
+
         public void logOut() {
             socket.disconnect();
         }
@@ -262,3 +333,14 @@ public class ServerConnectionHandler extends Service {
         }
     }
 }
+
+/*
+ * What remains:
+ *  - show other players
+ *  - show status
+ *  - throw out objects
+ *  - sell objects
+ *  - buy objects
+ *  - tech tree
+ *  - graphics
+ */

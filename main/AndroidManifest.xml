@@ -3,6 +3,7 @@
     package="net.dimatomp.gamechallenge">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:allowBackup="true"

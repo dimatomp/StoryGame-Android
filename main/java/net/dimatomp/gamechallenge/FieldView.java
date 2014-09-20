@@ -3,6 +3,7 @@ package net.dimatomp.gamechallenge;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -15,9 +16,12 @@ import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.PathShape;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -29,50 +33,108 @@ import static net.dimatomp.gamechallenge.GameField.MoveDirection;
  */
 public class FieldView extends View {
     private static final String TAG = "FieldView";
-    Bitmap tiles[], arrow;
+    BitmapDrawable tiles[];
+    Bitmap player;
+    Bitmap arrow;
     int sideLength;
-    RectF rectUp, rectLeft, rectRight, rectDown;
+    RectF rectUp, rectLeft, rectRight, rectDown, rectDig;
     Paint arrowPaint;
+    Paint textPaint = new Paint();
     LevelListDrawable portraitArrow;
     BitmapDrawable landscapeArrowPad;
     private int[][] field;
     private float xDown, yDown, dx, dy, fingerDelta;
     private boolean alreadyMoved, moving;
     private ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    private GestureDetector longPressDetector;
+    private HashMap<String, Coordinate> players;
+    private String userName;
+
+    public void setUserName(String name) {
+        userName = name;
+    }
+
+    class Coordinate {
+        int x, y;
+
+        Coordinate(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+    }
 
     public FieldView(Context context) {
         super(context);
-        initArrow();
+        initialize();
     }
 
     public FieldView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        initArrow();
+        initialize();
     }
 
     public FieldView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        initArrow();
+        initialize();
     }
 
-    private void initArrow() {
+    private void initialize() {
         arrow = ((BitmapDrawable) getResources().getDrawable(R.drawable.arrow)).getBitmap();
         arrowPaint = new Paint();
         arrowPaint.setAlpha(127);
+        arrowPaint.setStyle(Paint.Style.STROKE);
+        arrowPaint.setColor(Color.RED);
+        arrowPaint.setStrokeWidth(getResources().getDimension(R.dimen.circle_thickness));
+        longPressDetector = new GestureDetector(getContext(), new OnLongPressListener());
+        players = new HashMap<>();
     }
 
     private void loadTileImages(int sideLength) {
         if (sideLength == 0)
             return;
         this.sideLength = sideLength;
-        tiles = new Bitmap[]{
-                ((BitmapDrawable) getResources().getDrawable(R.drawable.ground0)).getBitmap(),
-                ((BitmapDrawable) getResources().getDrawable(R.drawable.ground1)).getBitmap(),
-                ((BitmapDrawable) getResources().getDrawable(R.drawable.ground2)).getBitmap(),
-                ((BitmapDrawable) getResources().getDrawable(R.drawable.shop)).getBitmap()
+        Bitmap tiles[] = new Bitmap[]{
+                BitmapFactory.decodeResource(getResources(), R.drawable.ground0),
+                BitmapFactory.decodeResource(getResources(), R.drawable.ground1),
+                BitmapFactory.decodeResource(getResources(), R.drawable.ground2),
+                BitmapFactory.decodeResource(getResources(), R.drawable.shop),
+                BitmapFactory.decodeResource(getResources(), R.drawable.water),
         };
-        for (int i = 0; i < tiles.length; i++)
-            tiles[i] = Bitmap.createScaledBitmap(tiles[i], sideLength, sideLength, false);
+        Canvas canvas = new Canvas();
+        this.tiles = new BitmapDrawable[tiles.length];
+        for (int i = 0; i < tiles.length; i++) {
+            Bitmap bitmap;
+            switch (i) {
+                case 0:
+                case 1:
+                    bitmap = Bitmap.createScaledBitmap(tiles[i].copy(Bitmap.Config.ARGB_8888, true), 150, 150, true);
+                    bitmap.setHasAlpha(true);
+                    for (int x = 0; x < 25; x++)
+                        for (int y = x; y < 150 - x; y++) {
+                            bitmap.setPixel(x, y, bitmap.getPixel(x, y) & 0xffffff | ((0xff * x / 25) << 24));
+                            bitmap.setPixel(y, x, bitmap.getPixel(y, x) & 0xffffff | ((0xff * x / 25) << 24));
+                            bitmap.setPixel(149 - x, 149 - y, bitmap.getPixel(149 - x, 149 - y) & 0xffffff | ((0xff * x / 25) << 24));
+                            bitmap.setPixel(149 - y, 149 - x, bitmap.getPixel(149 - y, 149 - x) & 0xffffff | ((0xff * x / 25) << 24));
+                        }
+                    this.tiles[i] = new BitmapDrawable(getResources(), Bitmap.createScaledBitmap(bitmap, sideLength * 5 / 4, sideLength * 5 / 4, true));
+                    break;
+                case 2:
+                case 4:
+                    this.tiles[i] = new BitmapDrawable(getResources(), Bitmap.createScaledBitmap(tiles[i], sideLength, sideLength, false));
+                    break;
+                case 3:
+                    tiles[i] = Bitmap.createScaledBitmap(tiles[i], sideLength, sideLength, true);
+                    tiles[i].setHasAlpha(true);
+                    bitmap = this.tiles[0].getBitmap().copy(Bitmap.Config.ARGB_8888, true);
+                    bitmap.setHasAlpha(true);
+                    canvas.setBitmap(bitmap);
+                    canvas.drawBitmap(tiles[i], sideLength / 8, sideLength / 8, null);
+                    this.tiles[i] = new BitmapDrawable(getResources(), bitmap);
+                    break;
+            }
+        }
+        player = BitmapFactory.decodeResource(getResources(), R.drawable.player);
+        player = Bitmap.createScaledBitmap(player, sideLength, sideLength, true);
     }
 
     public void setField(int[][] field, boolean sizeChanged) {
@@ -111,16 +173,15 @@ public class FieldView extends View {
         Path circlePath = new Path();
         circlePath.addCircle(fingerDelta * 1.5f, fingerDelta * 1.5f, fingerDelta * 0.8f, Path.Direction.CW);
         ShapeDrawable circleDrawable = new ShapeDrawable(new PathShape(circlePath, fingerDelta * 3, fingerDelta * 3));
-        circleDrawable.getPaint().setColor(Color.RED);
-        circleDrawable.getPaint().setStyle(Paint.Style.STROKE);
-        circleDrawable.getPaint().setStrokeWidth(getResources().getDimension(R.dimen.portrait_circle_thickness));
-        circleDrawable.getPaint().setAlpha(arrowPaint.getAlpha());
+        circleDrawable.getPaint().set(arrowPaint);
+        circleDrawable.setAlpha(arrowPaint.getAlpha());
         portraitArrow.addLevel(1, 1, circleDrawable);
 
         arrow = Bitmap.createScaledBitmap(arrow, (int) fingerDelta, (int) fingerDelta, false);
         for (int i = 2; i <= 5; i++) {
             Canvas canvas = new Canvas();
             Bitmap bitmap = Bitmap.createBitmap(3 * (int) fingerDelta, 3 * (int) fingerDelta, Bitmap.Config.ARGB_8888);
+            bitmap.setHasAlpha(true);
             canvas.setBitmap(bitmap);
             Matrix matrix = moveMatrix(3 * fingerDelta - arrow.getWidth(), fingerDelta * 1.5f - arrow.getHeight() / 2);
             matrix.postRotate(90 * (i - 2), fingerDelta * 1.5f, fingerDelta * 1.5f);
@@ -140,16 +201,20 @@ public class FieldView extends View {
         rectLeft = new RectF(0, h - 2 * rectSide, rectSide, h - rectSide);
         rectRight = new RectF(2 * rectSide, h - 2 * rectSide, 3 * rectSide, h - rectSide);
         rectDown = new RectF(rectSide, h - rectSide, 2 * rectSide, h);
+        rectDig = new RectF(rectSide, rectSide, 2 * rectSide, rectSide);
         arrow = Bitmap.createScaledBitmap(arrow, (int) rectSide, (int) rectSide, false);
 
         Canvas canvas = new Canvas();
         Bitmap bitmap = Bitmap.createBitmap((int) rectSide * 3, (int) rectSide * 3, Bitmap.Config.ARGB_8888);
+        bitmap.setHasAlpha(true);
         canvas.setBitmap(bitmap);
         Matrix matrix = moveMatrix(2 * rectSide, rectSide);
         for (int i = 0; i < 4; i++) {
             canvas.drawBitmap(arrow, matrix, arrowPaint);
             matrix.postRotate(90, rectSide * 1.5f, rectSide * 1.5f);
         }
+        canvas.drawCircle(rectSide * 1.5f, rectSide * 1.5f, rectSide / 2.5f, arrowPaint);
+        canvas.drawPoint(rectSide * 1.5f, rectSide * 1.5f, arrowPaint);
         landscapeArrowPad = new BitmapDrawable(getResources(), bitmap);
         landscapeArrowPad.setBounds(0, h - 3 * (int) rectSide, 3 * (int) rectSide, h);
     }
@@ -236,6 +301,7 @@ public class FieldView extends View {
                     invalidatePortraitArrow();
                     break;
             }
+            longPressDetector.onTouchEvent(event);
         } else {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
@@ -244,6 +310,7 @@ public class FieldView extends View {
                     xDown = event.getX();
                     yDown = event.getY();
                     sendMoveRequest();
+                    longPressDetector.onTouchEvent(event);
                     break;
                 case MotionEvent.ACTION_UP:
                     moving = false;
@@ -253,16 +320,57 @@ public class FieldView extends View {
         return true;
     }
 
+    public void applyUserPos(String name, int x, int y) {
+        boolean invalid = false;
+        if (!name.equals(userName)) {
+            Coordinate old = players.get(name);
+            Coordinate mine = players.get(userName);
+            if (Math.abs(old.x - x) < field.length / 2 || Math.abs(old.y - y) < field.length / 2 ||
+                    Math.abs(mine.x - x) < field.length / 2 || Math.abs(mine.y - y) < field.length / 2)
+                invalid = true;
+        }
+        players.put(name, new Coordinate(x, y));
+        if (invalid)
+            // TODO invalidateRect?
+            invalidate();
+    }
+
+    public void removeUser(String name) {
+        Coordinate cur = players.get(name);
+        Coordinate mine = players.get(userName);
+        boolean invalid = (Math.abs(cur.x - mine.x) < field.length / 2 || Math.abs(cur.y - mine.y) < field.length / 2);
+        players.remove(name);
+        if (invalid)
+            // TODO invalidateRect?
+            invalidate();
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (field != null && tiles != null) {
             canvas.save();
-            canvas.concat(moveMatrix((getWidth() - sideLength * field.length) / 2f, (getHeight() - sideLength * field[0].length) / 2f));
+            int left = (getWidth() - sideLength * field.length) / 2;
+            int top = (getHeight() - sideLength * field[0].length) / 2;
+            canvas.clipRect(left, top, getWidth() - left, getHeight() - top);
+            canvas.concat(moveMatrix(left, top));
             for (int i = 0; i < field.length; i++)
-                for (int j = 0; j < field[i].length; j++)
-                    canvas.drawBitmap(tiles[field[i][j]], moveMatrix(sideLength * i, sideLength * j), null);
+                for (int j = 0; j < field[i].length; j++) {
+                    if (field[i][j] < 2 || field[i][j] == 3)
+                        tiles[field[i][j]].setBounds(sideLength * i - sideLength / 8, sideLength * j - sideLength / 8,
+                                sideLength * (i + 1) + sideLength / 8, sideLength * (j + 1) + sideLength / 8);
+                    else
+                        tiles[field[i][j]].setBounds(sideLength * i, sideLength * j, sideLength * (i + 1), sideLength * (j + 1));
+                    tiles[field[i][j]].draw(canvas);
+                }
             canvas.restore();
+        }
+        Coordinate myCrd = players.get(userName);
+        for (Map.Entry<String, Coordinate> entry: players.entrySet()) {
+            int screenX = sideLength * (entry.getValue().x - myCrd.x + field.length / 2);
+            int screenY = sideLength * (entry.getValue().y - myCrd.y + field[0].length / 2);
+            canvas.drawBitmap(player, screenX, screenY, null);
+            canvas.drawText(entry.getKey(), screenX, screenY, textPaint);
         }
         if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)
             landscapeArrowPad.draw(canvas);
@@ -324,6 +432,18 @@ public class FieldView extends View {
                     handleNextMove(true);
                 }
             });
+        }
+    }
+
+    class OnLongPressListener extends GestureDetector.SimpleOnGestureListener {
+        @Override
+        public boolean onDown(MotionEvent e) {
+            return true;
+        }
+
+        @Override
+        public void onLongPress(MotionEvent e) {
+            ((GameField) getContext()).sendDigEvent();
         }
     }
 }
