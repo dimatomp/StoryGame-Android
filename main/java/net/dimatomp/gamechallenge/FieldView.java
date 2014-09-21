@@ -83,7 +83,7 @@ public class FieldView extends View {
         arrowPaint.setAntiAlias(true);
         textPaint = new Paint();
         textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setTextSize(=16);
+        textPaint.setTextSize(16);
         textPaint.setAntiAlias(true);
         Rect textRect = new Rect();
         textPaint.getTextBounds("T", 0, 1, textRect);
