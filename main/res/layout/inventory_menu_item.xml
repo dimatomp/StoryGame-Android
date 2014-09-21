@@ -19,6 +19,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
+        android:lines="1"
         android:layout_toEndOf="@id/item_type_icon"
         android:textAppearance="?android:attr/textAppearanceLarge" />
 
@@ -27,7 +28,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@+id/item_name"
-        android:layout_toEndOf="@+id/item_type_icon"
+        android:layout_toEndOf="@id/item_type_icon"
         android:textAppearance="?android:attr/textAppearanceSmall" />
 
     <FrameLayout
@@ -35,6 +36,7 @@
         android:layout_height="match_parent"
         android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
+        android:id="@+id/buy_sell_button"
         android:background="@drawable/sell_throwout_button"
         android:foregroundGravity="center"
         android:clickable="true">

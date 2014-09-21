@@ -38,7 +38,10 @@ import ru.ifmo.ctddev.games.state.InventoryItem;
 import ru.ifmo.ctddev.games.state.Item;
 import ru.ifmo.ctddev.games.state.Poll;
 
-import static net.dimatomp.gamechallenge.GameDatabaseColumns.*;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.INVENTORY_TABLE;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.POLLS_TABLE;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.STORE_TABLE;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.VOTE_OPTIONS;
 
 public class ServerConnectionHandler extends Service {
     private static final String TAG = "ServerConnectionHandler";
@@ -94,7 +97,8 @@ public class ServerConnectionHandler extends Service {
             while (gameField == null)
                 try {
                     wait();
-                } catch (InterruptedException ignore) {}
+                } catch (InterruptedException ignore) {
+                }
             gameField.runOnUiThread(runnable);
         }
 
@@ -230,7 +234,7 @@ public class ServerConnectionHandler extends Service {
                 public void call(Object... args) {
                     InventoryMessage items = mapper.convertValue(args[0], InventoryMessage.class);
                     GameDatabase.cleanupTable(ServerConnectionHandler.this, INVENTORY_TABLE);
-                    for (InventoryItem item: items.getInventory().values())
+                    for (InventoryItem item : items.getInventory().values())
                         GameDatabase.addInvItem(ServerConnectionHandler.this, item);
                     refreshGameField(GameField.LOADER_INVENTORY);
                 }
@@ -240,7 +244,7 @@ public class ServerConnectionHandler extends Service {
                     StoreMessage message = mapper.convertValue(args[0], StoreMessage.class);
                     GameDatabase.cleanupTable(ServerConnectionHandler.this, STORE_TABLE);
                     if (message.isSuccess())
-                        for (Item item: message.getItems().values())
+                        for (Item item : message.getItems().values())
                             GameDatabase.addStoreItem(ServerConnectionHandler.this, item);
                     refreshGameField(GameField.LOADER_STORE);
                 }
@@ -367,9 +371,9 @@ public class ServerConnectionHandler extends Service {
 
 /*
  * What remains:
+ *  - tech tree
  *  - throw out objects
  *  - sell objects
  *  - buy objects
- *  - tech tree
  *  - graphics?
  */

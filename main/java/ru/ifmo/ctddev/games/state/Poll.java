@@ -1,8 +1,5 @@
 package ru.ifmo.ctddev.games.state;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 /**
  * Created by Aksenov239 on 30.08.2014.
  */
@@ -60,6 +57,10 @@ public class Poll {
         return minimalAmount;
     }
 
+    public void setMinimalAmount(int[] minimalAmount) {
+        this.minimalAmount = minimalAmount;
+    }
+
     public int getMinimalAmountById(int id) {
         return minimalAmount[id];
     }
@@ -76,10 +77,6 @@ public class Poll {
             if (optionsName[i].equals(name))
                 return i;
         return -1;
-    }
-
-    public void setMinimalAmount(int[] minimalAmount) {
-        this.minimalAmount = minimalAmount;
     }
 
     public void addInvestedMoney(String optionName, int x) {
@@ -112,11 +109,11 @@ public class Poll {
         this.date = date;
     }
 
-    public void setInvestedMoney(int[] investedMoney) {
-        this.investedMoney = investedMoney;
-    }
-
     public int[] getInvestedMoney() {
         return investedMoney;
+    }
+
+    public void setInvestedMoney(int[] investedMoney) {
+        this.investedMoney = investedMoney;
     }
 }

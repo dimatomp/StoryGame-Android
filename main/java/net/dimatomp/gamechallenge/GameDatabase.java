@@ -12,7 +12,26 @@ import ru.ifmo.ctddev.games.state.InventoryItem;
 import ru.ifmo.ctddev.games.state.Item;
 import ru.ifmo.ctddev.games.state.Poll;
 
-import static net.dimatomp.gamechallenge.GameDatabaseColumns.*;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.CHOSEN;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.GOODS_COST_BUY;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.GOODS_COST_SELL;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.GOODS_NAME;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.GOODS_TYPE;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.INVENTORY_TABLE;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_COST;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_COUNT;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_NAME;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_TYPE;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.MINIMAL_AMOUNT;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.MONEY;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.OPTION_NAME;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.POLLS_TABLE;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.POLL_NAME;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.PRIORITY;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.STORE_TABLE;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.TITLE;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.VOTE_OPTIONS;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns._ID;
 
 /**
  * Created by dimatomp on 13.09.14.
@@ -21,6 +40,8 @@ public class GameDatabase extends SQLiteOpenHelper {
     public static final String[] POLL_COLUMNS = new String[]{_ID, TITLE};
     public static final String[] OPTION_COLUMNS = new String[]{_ID, OPTION_NAME, MINIMAL_AMOUNT};
     public static final String[] POLL_DATA = new String[]{_ID, CHOSEN, MONEY};
+    public static final String[] STORE_COLUMNS = new String[]{_ID, GOODS_NAME, GOODS_TYPE, GOODS_COST_BUY, GOODS_COST_SELL};
+    public static final String[] INVENTORY_COLUMNS = new String[]{_ID, ITEM_NAME, ITEM_TYPE, ITEM_COUNT, ITEM_COST};
     private static final String TAG = "PollDatabase";
     private static GameDatabase instance;
 
@@ -77,13 +98,9 @@ public class GameDatabase extends SQLiteOpenHelper {
         db.insert(STORE_TABLE, null, values);
     }
 
-    public static final String[] STORE_COLUMNS = new String[]{_ID, GOODS_NAME, GOODS_TYPE, GOODS_COST_BUY, GOODS_COST_SELL};
-
     public static Cursor getStore(Context context) {
         return getInstance(context).getReadableDatabase().query(STORE_TABLE, STORE_COLUMNS, null, null, null, null, null);
     }
-
-    public static final String[] INVENTORY_COLUMNS = new String[]{_ID, ITEM_NAME, ITEM_TYPE, ITEM_COUNT, ITEM_COST};
 
     public static Cursor getInventory(Context context) {
         return getInstance(context).getReadableDatabase().query(INVENTORY_TABLE, INVENTORY_COLUMNS, null, null, null, null, null);

@@ -7,18 +7,19 @@ import android.widget.ImageView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
-import org.w3c.dom.Text;
-
-import static net.dimatomp.gamechallenge.GameDatabaseColumns.*;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_COST;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_COUNT;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_NAME;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_TYPE;
 
 /**
  * Created by dimatomp on 19.09.14.
  */
 public class InventoryBinder implements SimpleCursorAdapter.ViewBinder {
-    private Resources resources;
-    private boolean sellAvailable;
     private static final int itemTypeRes[] = new int[]{R.string.item_weapon, R.string.item_potion, R.string.item_ore};
     private static final int iconResources[] = new int[]{R.drawable.sword, R.drawable.potion, R.drawable.ore};
+    private Resources resources;
+    private boolean sellAvailable;
 
     public InventoryBinder(Resources resources) {
         this.resources = resources;

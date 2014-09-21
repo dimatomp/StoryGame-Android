@@ -8,7 +8,8 @@ public class StateMessage {
     int energy;
     int x, y;
 
-    public StateMessage() {}
+    public StateMessage() {
+    }
 
     public StateMessage(int money, int energy, int x, int y) {
         this.money = money;
@@ -21,28 +22,28 @@ public class StateMessage {
         return money;
     }
 
+    public void setMoney(int money) {
+        this.money = money;
+    }
+
     public int getX() {
         return x;
+    }
+
+    public void setX(int x) {
+        this.x = x;
     }
 
     public int getEnergy() {
         return energy;
     }
 
-    public int getY() {
-        return y;
-    }
-
-    public void setMoney(int money) {
-        this.money = money;
-    }
-
     public void setEnergy(int energy) {
         this.energy = energy;
     }
 
-    public void setX(int x) {
-        this.x = x;
+    public int getY() {
+        return y;
     }
 
     public void setY(int y) {

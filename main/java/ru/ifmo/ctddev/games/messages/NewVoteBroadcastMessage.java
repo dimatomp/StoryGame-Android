@@ -7,7 +7,10 @@ import ru.ifmo.ctddev.games.state.Poll;
  */
 public class NewVoteBroadcastMessage {
     private Poll poll;
-    public NewVoteBroadcastMessage() {}
+
+    public NewVoteBroadcastMessage() {
+    }
+
     public NewVoteBroadcastMessage(Poll poll) {
         this.poll = poll;
     }

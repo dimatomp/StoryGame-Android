@@ -10,7 +10,8 @@ public class InventoryItem {
     private int type;
     private int count;
 
-    public InventoryItem() {}
+    public InventoryItem() {
+    }
 
     public InventoryItem(int id, String name, int costSell, int type, int count) {
         this.id = id;
@@ -28,32 +29,16 @@ public class InventoryItem {
         count = 0;
     }
 
-    public void setCount(int count) {
-        this.count = count;
-    }
-
     public int getCount() {
         return count;
     }
 
+    public void setCount(int count) {
+        this.count = count;
+    }
+
     public void addCount(int x) {
         count += x;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setCostSell(int costSell) {
-        this.costSell = costSell;
-    }
-
-    public void setType(int type) {
-        this.type = type;
     }
 
     public int getId() {
@@ -61,15 +46,31 @@ public class InventoryItem {
         return id;
     }
 
+    public void setId(int id) {
+        this.id = id;
+    }
+
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public int getCostSell() {
         return costSell;
     }
 
+    public void setCostSell(int costSell) {
+        this.costSell = costSell;
+    }
+
     public int getType() {
         return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
     }
 }

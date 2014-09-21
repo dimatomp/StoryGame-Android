@@ -7,7 +7,8 @@ public class StartMessage {
     private boolean success;
     private int field[][];
 
-    public StartMessage() {}
+    public StartMessage() {
+    }
 
     public StartMessage(boolean success) {
         this.success = success;

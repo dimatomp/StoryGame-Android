@@ -7,7 +7,8 @@ public class UserJoinedBroadcastMessage {
     private String userName;
     private int x, y;
 
-    public UserJoinedBroadcastMessage() {}
+    public UserJoinedBroadcastMessage() {
+    }
 
     public UserJoinedBroadcastMessage(String userName, int y, int x) {
         this.userName = userName;
@@ -19,20 +20,20 @@ public class UserJoinedBroadcastMessage {
         return userName;
     }
 
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
     public void setUserName(String userName) {
         this.userName = userName;
     }
 
+    public int getX() {
+        return x;
+    }
+
     public void setX(int x) {
         this.x = x;
+    }
+
+    public int getY() {
+        return y;
     }
 
     public void setY(int y) {

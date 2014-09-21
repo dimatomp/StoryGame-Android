@@ -52,19 +52,6 @@ public class FieldView extends View {
     private Map<String, Coordinate> players;
     private String userName;
 
-    public void setUserName(String name) {
-        userName = name;
-    }
-
-    static class Coordinate {
-        int x, y;
-
-        Coordinate(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-    }
-
     public FieldView(Context context) {
         super(context);
         initialize();
@@ -78,6 +65,10 @@ public class FieldView extends View {
     public FieldView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         initialize();
+    }
+
+    public void setUserName(String name) {
+        userName = name;
     }
 
     private void initialize() {
@@ -105,57 +96,6 @@ public class FieldView extends View {
         players = savedInstanceState.players;
         userName = savedInstanceState.userName;
         setField(savedInstanceState.field, false);
-    }
-
-    static class SavedInstanceState implements Parcelable {
-        int[][] field;
-        String userName;
-        Map<String, Coordinate> players;
-
-        SavedInstanceState(int[][] field, Map<String, Coordinate> players, String userName) {
-            this.field = field;
-            this.players = players;
-            this.userName = userName;
-        }
-
-        @Override
-        public int describeContents() {
-            return 0;
-        }
-
-        @Override
-        public void writeToParcel(Parcel dest, int flags) {
-            dest.writeInt(field.length);
-            dest.writeInt(field[0].length);
-            for (int[] a: field)
-                dest.writeIntArray(a);
-            dest.writeInt(players.size());
-            for (Map.Entry<String, Coordinate> entry: players.entrySet()) {
-                dest.writeString(entry.getKey());
-                dest.writeInt(entry.getValue().x);
-                dest.writeInt(entry.getValue().y);
-            }
-            dest.writeString(userName);
-        }
-
-        public static final Creator<SavedInstanceState> CREATOR = new Creator<SavedInstanceState>() {
-            @Override
-            public SavedInstanceState createFromParcel(Parcel source) {
-                int[][] field = new int[source.readInt()][source.readInt()];
-                for (int i = 0; i < field.length; i++)
-                    source.readIntArray(field[i]);
-                Map<String, Coordinate> players = new HashMap<>();
-                for (int i = source.readInt(); i > 0; i--) {
-                    players.put(source.readString(), new Coordinate(source.readInt(), source.readInt()));
-                }
-                return new SavedInstanceState(field, players, source.readString());
-            }
-
-            @Override
-            public SavedInstanceState[] newArray(int size) {
-                return new SavedInstanceState[size];
-            }
-        };
     }
 
     private void loadTileImages(int sideLength) {
@@ -440,7 +380,7 @@ public class FieldView extends View {
                 }
             Coordinate myCrd = players.get(userName);
             if (myCrd != null)
-                for (Map.Entry<String, Coordinate> entry: players.entrySet()) {
+                for (Map.Entry<String, Coordinate> entry : players.entrySet()) {
                     int screenX = sideLength * (entry.getValue().x - myCrd.x + field.length / 2);
                     int screenY = sideLength * (entry.getValue().y - myCrd.y + field[0].length / 2);
                     canvas.drawBitmap(player, screenY, screenX, null);
@@ -457,6 +397,65 @@ public class FieldView extends View {
                     (int) (xDown + fingerDelta * 1.5f),
                     (int) (yDown + fingerDelta * 1.5f));
             portraitArrow.draw(canvas);
+        }
+    }
+
+    static class Coordinate {
+        int x, y;
+
+        Coordinate(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
+    static class SavedInstanceState implements Parcelable {
+        public static final Creator<SavedInstanceState> CREATOR = new Creator<SavedInstanceState>() {
+            @Override
+            public SavedInstanceState createFromParcel(Parcel source) {
+                int[][] field = new int[source.readInt()][source.readInt()];
+                for (int i = 0; i < field.length; i++)
+                    source.readIntArray(field[i]);
+                Map<String, Coordinate> players = new HashMap<>();
+                for (int i = source.readInt(); i > 0; i--) {
+                    players.put(source.readString(), new Coordinate(source.readInt(), source.readInt()));
+                }
+                return new SavedInstanceState(field, players, source.readString());
+            }
+
+            @Override
+            public SavedInstanceState[] newArray(int size) {
+                return new SavedInstanceState[size];
+            }
+        };
+        int[][] field;
+        String userName;
+        Map<String, Coordinate> players;
+
+        SavedInstanceState(int[][] field, Map<String, Coordinate> players, String userName) {
+            this.field = field;
+            this.players = players;
+            this.userName = userName;
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeInt(field.length);
+            dest.writeInt(field[0].length);
+            for (int[] a : field)
+                dest.writeIntArray(a);
+            dest.writeInt(players.size());
+            for (Map.Entry<String, Coordinate> entry : players.entrySet()) {
+                dest.writeString(entry.getKey());
+                dest.writeInt(entry.getValue().x);
+                dest.writeInt(entry.getValue().y);
+            }
+            dest.writeString(userName);
         }
     }
 

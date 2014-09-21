@@ -26,14 +26,22 @@ import android.widget.TabHost;
 import android.widget.TabWidget;
 import android.widget.TextView;
 
-import org.w3c.dom.Text;
-
 import ru.ifmo.ctddev.games.messages.MoveResponseMessage;
-import ru.ifmo.ctddev.games.messages.StateMessage;
 
-import static net.dimatomp.gamechallenge.GameDatabaseColumns.*;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.CHOSEN;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.GOODS_COST_BUY;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.GOODS_NAME;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.GOODS_TYPE;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_COST;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_COUNT;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_NAME;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_TYPE;
+import static net.dimatomp.gamechallenge.GameDatabaseColumns.TITLE;
 
 public class GameField extends Activity implements AdapterView.OnItemClickListener {
+    public static final int LOADER_POLLS = 0;
+    public static final int LOADER_INVENTORY = 2;
+    public static final int LOADER_STORE = 3;
     private static final String TAG = "GameField";
     private static final String SAVED_INSTANCE_DIALOG = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_DIALOG";
     private static final String SAVED_INSTANCE_DIALOG_SHOWN = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_DIALOG_SHOWN";
@@ -49,6 +57,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     PollLoaderCallbacks loaderCallbacks = new PollLoaderCallbacks();
     AdapterRadioGroup dialogRadioGroup;
     MoneyPicker dialogPicker;
+    SimpleCursorAdapter inventoryAdapter, storeAdapter;
     private HandlerConnection connection = new HandlerConnection();
     private String dialogShown;
     private InventoryBinder inventoryBinder;
@@ -86,6 +95,11 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
             host.getTabWidget().setOrientation(LinearLayout.VERTICAL);
     }
 
+    public boolean isStoreVisible() {
+        TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
+        return tabHost.getTabWidget().getChildAt(3).getVisibility() == View.VISIBLE;
+    }
+
     public void setStoreVisible(boolean visible) {
         TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
         tabHost.getTabWidget().getChildAt(3).setVisibility(visible ? View.VISIBLE : View.GONE);
@@ -95,11 +109,6 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         inventoryBinder.setSellAvailable(visible);
         if (notifyChanged)
             inventoryAdapter.notifyDataSetChanged();
-    }
-
-    public boolean isStoreVisible() {
-        TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
-        return tabHost.getTabWidget().getChildAt(3).getVisibility() == View.VISIBLE;
     }
 
     private void createIndicator(TabHost host, TabHost.TabSpec childView, String text, Drawable icon) {
@@ -128,8 +137,6 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         storeAdapter.setViewBinder(new StoreBinder(getResources()));
         view.setAdapter(storeAdapter);
     }
-
-    SimpleCursorAdapter inventoryAdapter, storeAdapter;
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -194,10 +201,6 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                     }
                 });
     }
-
-    public static final int LOADER_POLLS = 0;
-    public static final int LOADER_INVENTORY = 2;
-    public static final int LOADER_STORE = 3;
 
     public void updateInfo(int id) {
         getLoaderManager().restartLoader(id, null, loaderCallbacks);
@@ -267,7 +270,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
         outState.putInt(SAVED_INSTANCE_TAB_NUMBER, tabHost.getCurrentTab());
         outState.putBoolean(SAVED_INSTANCE_TABBAR_SHOWN, tabHost.getTabWidget().getVisibility() == View.VISIBLE);
-        outState.putStringArray(SAVED_INSTANCE_STATUS, new String[] {
+        outState.putStringArray(SAVED_INSTANCE_STATUS, new String[]{
                 ((TextView) findViewById(R.id.status_username)).getText().toString(),
                 ((TextView) findViewById(R.id.status_money)).getText().toString(),
                 ((TextView) findViewById(R.id.status_energy)).getText().toString()
@@ -318,6 +321,27 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     public void finish(View view) {
         connection.logOut();
         finish();
+    }
+
+    private void setUserName(String userName) {
+        field.setUserName(userName);
+        ((TextView) findViewById(R.id.status_username)).setText(userName);
+    }
+
+    public void updateState(Integer newMoney, Integer newEnergy) {
+        if (newMoney != null)
+            ((TextView) findViewById(R.id.status_money)).setText(Integer.toString(newMoney));
+        if (newEnergy != null)
+            ((TextView) findViewById(R.id.status_energy)).setText(Integer.toString(newEnergy));
+    }
+
+    public void increaseEnergy(int increment) {
+        int cEnergy = Integer.parseInt(((TextView) findViewById(R.id.status_energy)).getText().toString());
+        ((TextView) findViewById(R.id.status_energy)).setText(Integer.toString(cEnergy + increment));
+    }
+
+    public void sendDigEvent() {
+        connection.sendDigEvent();
     }
 
     public enum MoveDirection {
@@ -420,27 +444,6 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         }
     }
 
-    private void setUserName(String userName) {
-        field.setUserName(userName);
-        ((TextView) findViewById(R.id.status_username)).setText(userName);
-    }
-
-    public void updateState(Integer newMoney, Integer newEnergy) {
-        if (newMoney != null)
-            ((TextView) findViewById(R.id.status_money)).setText(Integer.toString(newMoney));
-        if (newEnergy != null)
-            ((TextView) findViewById(R.id.status_energy)).setText(Integer.toString(newEnergy));
-    }
-
-    public void increaseEnergy(int increment) {
-        int cEnergy = Integer.parseInt(((TextView) findViewById(R.id.status_energy)).getText().toString());
-        ((TextView) findViewById(R.id.status_energy)).setText(Integer.toString(cEnergy + increment));
-    }
-
-    public void sendDigEvent() {
-        connection.sendDigEvent();
-    }
-
     private class HandlerConnection implements ServiceConnection {
         ServerConnectionHandler.ServerConnectionBinder service;
 
@@ -464,7 +467,8 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                             while (service == null)
                                 try {
                                     wait();
-                                } catch (InterruptedException ignore) {}
+                                } catch (InterruptedException ignore) {
+                                }
                         }
                         runnable.run();
                     }
@@ -472,7 +476,6 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
             else
                 runnable.run();
         }
-
 
 
         public void sendVoteMessage(final String optionName, final int amount) {

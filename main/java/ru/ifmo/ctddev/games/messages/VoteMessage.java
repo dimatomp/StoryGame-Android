@@ -8,7 +8,8 @@ public class VoteMessage {
     private String option;
     private int amount;
 
-    public VoteMessage() {}
+    public VoteMessage() {
+    }
 
     public VoteMessage(int id, String option, int amount) {
         this.id = id;

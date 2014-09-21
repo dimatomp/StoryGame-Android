@@ -4,9 +4,9 @@ package ru.ifmo.ctddev.games.messages;
  * Created by pva701 on 9/18/14.
  */
 public class MoveBroadcastMessage {
-    private String userName;
     int x, y;
     int dx, dy;
+    private String userName;
 
     public MoveBroadcastMessage() {
     }
@@ -23,36 +23,36 @@ public class MoveBroadcastMessage {
         return userName;
     }
 
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public int getDx() {
-        return dx;
-    }
-
-    public int getDy() {
-        return dy;
-    }
-
     public void setUserName(String userName) {
         this.userName = userName;
+    }
+
+    public int getX() {
+        return x;
     }
 
     public void setX(int x) {
         this.x = x;
     }
 
+    public int getY() {
+        return y;
+    }
+
     public void setY(int y) {
         this.y = y;
     }
 
+    public int getDx() {
+        return dx;
+    }
+
     public void setDx(int dx) {
         this.dx = dx;
+    }
+
+    public int getDy() {
+        return dy;
     }
 
     public void setDy(int dy) {

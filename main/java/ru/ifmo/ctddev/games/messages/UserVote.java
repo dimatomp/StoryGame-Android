@@ -8,7 +8,8 @@ public class UserVote {
     private String optionName;
     private int amount;
 
-    public UserVote() {}
+    public UserVote() {
+    }
 
     public UserVote(int idPoll, String optionName, int amount) {
         this.idPoll = idPoll;
@@ -20,20 +21,20 @@ public class UserVote {
         return idPoll;
     }
 
-    public String getOptionName() {
-        return optionName;
-    }
-
-    public int getAmount() {
-        return amount;
-    }
-
     public void setIdPoll(int idPoll) {
         this.idPoll = idPoll;
     }
 
+    public String getOptionName() {
+        return optionName;
+    }
+
     public void setOptionName(String optionName) {
         this.optionName = optionName;
+    }
+
+    public int getAmount() {
+        return amount;
     }
 
     public void setAmount(int amount) {

@@ -15,9 +15,9 @@ import static net.dimatomp.gamechallenge.GameDatabaseColumns.GOODS_TYPE;
  * Created by dimatomp on 20.09.14.
  */
 public class StoreBinder implements SimpleCursorAdapter.ViewBinder {
-    private Resources resources;
     private static final int itemTypeRes[] = new int[]{R.string.item_weapon, R.string.item_potion, R.string.item_ore};
     private static final int iconResources[] = new int[]{R.drawable.sword, R.drawable.potion, R.drawable.ore};
+    private Resources resources;
 
     public StoreBinder(Resources resources) {
         this.resources = resources;

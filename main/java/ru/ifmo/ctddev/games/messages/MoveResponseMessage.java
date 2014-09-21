@@ -9,7 +9,8 @@ public class MoveResponseMessage {
     private int[] layer;
     private int dx, dy;
 
-    public MoveResponseMessage() {}
+    public MoveResponseMessage() {
+    }
 
     public MoveResponseMessage(boolean success) {
         this.success = success;
@@ -31,28 +32,28 @@ public class MoveResponseMessage {
         return success;
     }
 
-    public int[] getLayer() {
-        return layer;
-    }
-
-    public int getDx() {
-        return dx;
-    }
-
-    public int getDy() {
-        return dy;
-    }
-
     public void setSuccess(boolean success) {
         this.success = success;
+    }
+
+    public int[] getLayer() {
+        return layer;
     }
 
     public void setLayer(int[] layer) {
         this.layer = layer;
     }
 
+    public int getDx() {
+        return dx;
+    }
+
     public void setDx(int dx) {
         this.dx = dx;
+    }
+
+    public int getDy() {
+        return dy;
     }
 
     public void setDy(int dy) {

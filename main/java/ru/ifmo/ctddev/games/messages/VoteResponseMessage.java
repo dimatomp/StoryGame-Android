@@ -6,7 +6,8 @@ package ru.ifmo.ctddev.games.messages;
 public class VoteResponseMessage {
     private boolean successful;
 
-    public VoteResponseMessage() {}
+    public VoteResponseMessage() {
+    }
 
     public VoteResponseMessage(boolean successful) {
         this.successful = successful;

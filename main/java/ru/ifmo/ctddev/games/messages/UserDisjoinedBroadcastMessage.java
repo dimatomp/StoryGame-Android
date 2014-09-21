@@ -7,7 +7,8 @@ public class UserDisjoinedBroadcastMessage {
     private String userName;
     private int x, y;
 
-    public UserDisjoinedBroadcastMessage() {}
+    public UserDisjoinedBroadcastMessage() {
+    }
 
     public UserDisjoinedBroadcastMessage(String userName, int x, int y) {
         this.userName = userName;
@@ -19,20 +20,20 @@ public class UserDisjoinedBroadcastMessage {
         return userName;
     }
 
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
     public void setUserName(String userName) {
         this.userName = userName;
     }
 
+    public int getX() {
+        return x;
+    }
+
     public void setX(int x) {
         this.x = x;
+    }
+
+    public int getY() {
+        return y;
     }
 
     public void setY(int y) {
