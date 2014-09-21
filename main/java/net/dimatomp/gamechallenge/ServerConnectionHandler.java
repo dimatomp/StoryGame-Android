@@ -7,7 +7,6 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.os.Vibrator;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
@@ -18,8 +17,8 @@ import com.github.nkzawa.socketio.client.Socket;
 import org.json.JSONObject;
 
 import java.net.URISyntaxException;
-import java.util.Map;
 
+import ru.ifmo.ctddev.games.messages.AddEnergyMessage;
 import ru.ifmo.ctddev.games.messages.DigResponseMessage;
 import ru.ifmo.ctddev.games.messages.InventoryMessage;
 import ru.ifmo.ctddev.games.messages.JoinMessage;
@@ -91,22 +90,30 @@ public class ServerConnectionHandler extends Service {
                 });
         }
 
-        void refreshGameField(final int loaderId) {
-            if (gameField != null)
-                gameField.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        gameField.updateInfo(loaderId);
-                    }
-                });
+        private synchronized void awaitForFieldAndRun(Runnable runnable) {
+            while (gameField == null)
+                try {
+                    wait();
+                } catch (InterruptedException ignore) {}
+            gameField.runOnUiThread(runnable);
+        }
+
+        private void refreshGameField(final int loaderId) {
+            awaitForFieldAndRun(new Runnable() {
+                @Override
+                public void run() {
+                    gameField.updateInfo(loaderId);
+                }
+            });
         }
 
         public void setLoginForm(LoginForm loginForm) {
             this.loginForm = loginForm;
         }
 
-        public void setGameField(GameField field) {
+        public synchronized void setGameField(GameField field) {
             this.gameField = field;
+            notifyAll();
         }
 
         public boolean isConnecting() {
@@ -191,10 +198,8 @@ public class ServerConnectionHandler extends Service {
             }).on("move_response", new Emitter.Listener() {
                 @Override
                 public void call(final Object... args) {
-                    if (gameField == null)
-                        return;
                     final MoveResponseMessage message = mapper.convertValue(args[0], MoveResponseMessage.class);
-                    gameField.runOnUiThread(new Runnable() {
+                    awaitForFieldAndRun(new Runnable() {
                         @Override
                         public void run() {
                             gameField.handleMoveResponse(message);
@@ -242,12 +247,18 @@ public class ServerConnectionHandler extends Service {
             }).on("dig_response", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
-                    DigResponseMessage message = mapper.convertValue(args[0], DigResponseMessage.class);
+                    final DigResponseMessage message = mapper.convertValue(args[0], DigResponseMessage.class);
                     if (message.getCount() > 0) {
                         GameDatabase.addInvItem(ServerConnectionHandler.this, new InventoryItem(
                                 message.getItemId(), message.getName(), message.getCostSell(),
                                 message.getType(), message.getCount()));
-                        refreshGameField(GameField.LOADER_INVENTORY);
+                        awaitForFieldAndRun(new Runnable() {
+                            @Override
+                            public void run() {
+                                gameField.updateInfo(GameField.LOADER_INVENTORY);
+                                gameField.updateState(null, message.getEnergy());
+                            }
+                        });
                     }
                     ((Vibrator) getSystemService(VIBRATOR_SERVICE)).vibrate(100);
                 }
@@ -255,49 +266,57 @@ public class ServerConnectionHandler extends Service {
                 @Override
                 public void call(Object... args) {
                     final UserJoinedBroadcastMessage message = mapper.convertValue(args[0], UserJoinedBroadcastMessage.class);
-                    if (gameField != null)
-                        gameField.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                gameField.receiveUserInfoMessage(message.getUserName(), message.getX(), message.getY());
-                            }
-                        });
+                    awaitForFieldAndRun(new Runnable() {
+                        @Override
+                        public void run() {
+                            gameField.receivePlayerPosMessage(message.getUserName(), message.getX(), message.getY());
+                        }
+                    });
                 }
             }).on("move", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
                     final MoveBroadcastMessage message = mapper.convertValue(args[0], MoveBroadcastMessage.class);
-                    if (gameField != null)
-                        gameField.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                gameField.receiveUserInfoMessage(message.getUserName(), message.getX() + message.getDx(), message.getY() + message.getDy());
-                            }
-                        });
+                    awaitForFieldAndRun(new Runnable() {
+                        @Override
+                        public void run() {
+                            gameField.receivePlayerPosMessage(message.getUserName(), message.getX() + message.getDx(), message.getY() + message.getDy());
+                        }
+                    });
                 }
             }).on("user_disjoined", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
                     final UserDisjoinedBroadcastMessage message = mapper.convertValue(args[0], UserDisjoinedBroadcastMessage.class);
-                    if (gameField != null)
-                        gameField.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                gameField.receiveUserRemoval(message.getUserName());
-                            }
-                        });
+                    awaitForFieldAndRun(new Runnable() {
+                        @Override
+                        public void run() {
+                            gameField.receiveUserRemoval(message.getUserName());
+                        }
+                    });
                 }
             }).on("state", new Emitter.Listener() {
                 @Override
                 public void call(Object... args) {
                     final StateMessage message = mapper.convertValue(args[0], StateMessage.class);
-                    if (gameField != null)
-                        gameField.runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                gameField.receiveUserInfoMessage(userName, message.getX(), message.getY());
-                            }
-                        });
+                    awaitForFieldAndRun(new Runnable() {
+                        @Override
+                        public void run() {
+                            gameField.receivePlayerPosMessage(userName, message.getX(), message.getY());
+                            gameField.updateState(message.getMoney(), message.getEnergy());
+                        }
+                    });
+                }
+            }).on("add_energy", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+                    final AddEnergyMessage message = mapper.convertValue(args[0], AddEnergyMessage.class);
+                    awaitForFieldAndRun(new Runnable() {
+                        @Override
+                        public void run() {
+                            gameField.increaseEnergy(message.getValue());
+                        }
+                    });
                 }
             });
 
@@ -348,10 +367,9 @@ public class ServerConnectionHandler extends Service {
 
 /*
  * What remains:
- *  - show status
  *  - throw out objects
  *  - sell objects
  *  - buy objects
  *  - tech tree
- *  - graphics
+ *  - graphics?
  */

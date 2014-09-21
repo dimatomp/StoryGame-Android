@@ -87,6 +87,7 @@ public class FieldView extends View {
         arrowPaint.setStyle(Paint.Style.STROKE);
         arrowPaint.setColor(Color.RED);
         arrowPaint.setStrokeWidth(getResources().getDimension(R.dimen.circle_thickness));
+        arrowPaint.setAntiAlias(true);
         longPressDetector = new GestureDetector(getContext(), new OnLongPressListener());
         players = new HashMap<>();
     }
@@ -94,23 +95,27 @@ public class FieldView extends View {
     @Override
     protected Parcelable onSaveInstanceState() {
         super.onSaveInstanceState();
-        return new SavedInstanceState(field, players);
+        return new SavedInstanceState(field, players, userName);
     }
 
     @Override
     protected void onRestoreInstanceState(Parcelable state) {
         super.onRestoreInstanceState(null);
-        players = ((SavedInstanceState) state).players;
-        setField(((SavedInstanceState) state).field, false);
+        SavedInstanceState savedInstanceState = (SavedInstanceState) state;
+        players = savedInstanceState.players;
+        userName = savedInstanceState.userName;
+        setField(savedInstanceState.field, false);
     }
 
     static class SavedInstanceState implements Parcelable {
         int[][] field;
+        String userName;
         Map<String, Coordinate> players;
 
-        SavedInstanceState(int[][] field, Map<String, Coordinate> players) {
+        SavedInstanceState(int[][] field, Map<String, Coordinate> players, String userName) {
             this.field = field;
             this.players = players;
+            this.userName = userName;
         }
 
         @Override
@@ -130,6 +135,7 @@ public class FieldView extends View {
                 dest.writeInt(entry.getValue().x);
                 dest.writeInt(entry.getValue().y);
             }
+            dest.writeString(userName);
         }
 
         public static final Creator<SavedInstanceState> CREATOR = new Creator<SavedInstanceState>() {
@@ -142,7 +148,7 @@ public class FieldView extends View {
                 for (int i = source.readInt(); i > 0; i--) {
                     players.put(source.readString(), new Coordinate(source.readInt(), source.readInt()));
                 }
-                return new SavedInstanceState(field, players);
+                return new SavedInstanceState(field, players, source.readString());
             }
 
             @Override
@@ -264,7 +270,7 @@ public class FieldView extends View {
         rectLeft = new RectF(0, h - 2 * rectSide, rectSide, h - rectSide);
         rectRight = new RectF(2 * rectSide, h - 2 * rectSide, 3 * rectSide, h - rectSide);
         rectDown = new RectF(rectSide, h - rectSide, 2 * rectSide, h);
-        rectDig = new RectF(rectSide, rectSide, 2 * rectSide, rectSide);
+        rectDig = new RectF(rectSide, h - 2 * rectSide, 2 * rectSide, h - rectSide);
         arrow = Bitmap.createScaledBitmap(arrow, (int) rectSide, (int) rectSide, false);
 
         Canvas canvas = new Canvas();
@@ -289,7 +295,7 @@ public class FieldView extends View {
     }
 
     private void sendMoveRequest() {
-        if (moving && !alreadyMoved) {
+        if (userName != null && players.containsKey(userName) && moving && !alreadyMoved) {
             GameField field = (GameField) getContext();
             if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
                 if (Math.max(Math.abs(dx), Math.abs(dy)) > getResources().getDimension(R.dimen.portrait_finger_move_delta)) {
@@ -373,10 +379,11 @@ public class FieldView extends View {
                     xDown = event.getX();
                     yDown = event.getY();
                     sendMoveRequest();
-                    if (!(rectUp.contains(event.getX(), event.getY()) ||
+                    if (/*!(rectUp.contains(event.getX(), event.getY()) ||
                             rectLeft.contains(event.getX(), event.getY()) ||
                             rectDown.contains(event.getX(), event.getY()) ||
-                            rectRight.contains(event.getX(), event.getY())))
+                            rectRight.contains(event.getX(), event.getY()))*/
+                            rectDig.contains(xDown, yDown))
                         longPressDetector.onTouchEvent(event);
                     break;
                 case MotionEvent.ACTION_UP:

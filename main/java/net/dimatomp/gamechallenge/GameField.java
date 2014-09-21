@@ -26,7 +26,10 @@ import android.widget.TabHost;
 import android.widget.TabWidget;
 import android.widget.TextView;
 
+import org.w3c.dom.Text;
+
 import ru.ifmo.ctddev.games.messages.MoveResponseMessage;
+import ru.ifmo.ctddev.games.messages.StateMessage;
 
 import static net.dimatomp.gamechallenge.GameDatabaseColumns.*;
 
@@ -36,6 +39,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
     private static final String SAVED_INSTANCE_DIALOG_SHOWN = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_DIALOG_SHOWN";
     private static final String SAVED_INSTANCE_TAB_NUMBER = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_TAB_NUMBER";
     private static final String SAVED_INSTANCE_TABBAR_SHOWN = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_TABBAR_SHOWN";
+    private static final String SAVED_INSTANCE_STATUS = "net.dimatomp.gamechallenge.GameField.SAVED_INSTANCE_STATUS";
     FieldView field;
     boolean justStarted;
     SimpleCursorAdapter pollListAdapter;
@@ -226,6 +230,10 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
             TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
             tabHost.setCurrentTab(savedInstanceState.getInt(SAVED_INSTANCE_TAB_NUMBER));
             tabHost.getTabWidget().setVisibility(savedInstanceState.getBoolean(SAVED_INSTANCE_TABBAR_SHOWN) ? View.VISIBLE : View.GONE);
+            String[] status = savedInstanceState.getStringArray(SAVED_INSTANCE_STATUS);
+            ((TextView) findViewById(R.id.status_username)).setText(status[0]);
+            ((TextView) findViewById(R.id.status_money)).setText(status[1]);
+            ((TextView) findViewById(R.id.status_energy)).setText(status[2]);
             justStarted = false;
         } else
             justStarted = true;
@@ -259,9 +267,14 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
         outState.putInt(SAVED_INSTANCE_TAB_NUMBER, tabHost.getCurrentTab());
         outState.putBoolean(SAVED_INSTANCE_TABBAR_SHOWN, tabHost.getTabWidget().getVisibility() == View.VISIBLE);
+        outState.putStringArray(SAVED_INSTANCE_STATUS, new String[] {
+                ((TextView) findViewById(R.id.status_username)).getText().toString(),
+                ((TextView) findViewById(R.id.status_money)).getText().toString(),
+                ((TextView) findViewById(R.id.status_energy)).getText().toString()
+        });
     }
 
-    public void receiveUserInfoMessage(String name, int x, int y) {
+    public void receivePlayerPosMessage(String name, int x, int y) {
         field.applyUserPos(name, x, y);
     }
 
@@ -407,6 +420,23 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         }
     }
 
+    private void setUserName(String userName) {
+        field.setUserName(userName);
+        ((TextView) findViewById(R.id.status_username)).setText(userName);
+    }
+
+    public void updateState(Integer newMoney, Integer newEnergy) {
+        if (newMoney != null)
+            ((TextView) findViewById(R.id.status_money)).setText(Integer.toString(newMoney));
+        if (newEnergy != null)
+            ((TextView) findViewById(R.id.status_energy)).setText(Integer.toString(newEnergy));
+    }
+
+    public void increaseEnergy(int increment) {
+        int cEnergy = Integer.parseInt(((TextView) findViewById(R.id.status_energy)).getText().toString());
+        ((TextView) findViewById(R.id.status_energy)).setText(Integer.toString(cEnergy + increment));
+    }
+
     public void sendDigEvent() {
         connection.sendDigEvent();
     }
@@ -418,9 +448,10 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         public synchronized void onServiceConnected(ComponentName name, IBinder service) {
             this.service = (ServerConnectionHandler.ServerConnectionBinder) service;
             this.service.setGameField(GameField.this);
-            if (justStarted)
+            if (justStarted) {
                 field.setField(this.service.getStartInfo().getField(), false);
-            field.setUserName(this.service.getUserName());
+                setUserName(this.service.getUserName());
+            }
             notifyAll();
         }
 
@@ -437,7 +468,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                         }
                         runnable.run();
                     }
-                });
+                }).run();
             else
                 runnable.run();
         }
