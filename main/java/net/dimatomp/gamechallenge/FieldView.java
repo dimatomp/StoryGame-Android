@@ -9,6 +9,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.LevelListDrawable;
@@ -51,6 +52,7 @@ public class FieldView extends View {
     private GestureDetector longPressDetector;
     private Map<String, Coordinate> players;
     private String userName;
+    private int playerNameHeight;
 
     public FieldView(Context context) {
         super(context);
@@ -81,7 +83,12 @@ public class FieldView extends View {
         arrowPaint.setAntiAlias(true);
         textPaint = new Paint();
         textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setTextSize(20);
+        textPaint.setTextSize(=16);
+        textPaint.setAntiAlias(true);
+        Rect textRect = new Rect();
+        textPaint.getTextBounds("T", 0, 1, textRect);
+        playerNameHeight = textRect.height() / 2;
+
         longPressDetector = new GestureDetector(getContext(), new OnLongPressListener());
         players = new HashMap<>();
     }
@@ -387,7 +394,7 @@ public class FieldView extends View {
                     int screenX = sideLength * (entry.getValue().x - myCrd.x + field.length / 2);
                     int screenY = sideLength * (entry.getValue().y - myCrd.y + field[0].length / 2);
                     canvas.drawBitmap(player, screenY, screenX, null);
-                    canvas.drawText(entry.getKey(), screenY + sideLength / 2, screenX, textPaint);
+                    canvas.drawText(entry.getKey(), screenY + sideLength / 2, screenX + playerNameHeight, textPaint);
                 }
             canvas.restore();
         }
