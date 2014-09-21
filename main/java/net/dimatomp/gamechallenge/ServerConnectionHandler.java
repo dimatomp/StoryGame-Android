@@ -19,15 +19,21 @@ import org.json.JSONObject;
 import java.net.URISyntaxException;
 
 import ru.ifmo.ctddev.games.messages.AddEnergyMessage;
+import ru.ifmo.ctddev.games.messages.BuyItemMessage;
+import ru.ifmo.ctddev.games.messages.BuyResponseMessage;
 import ru.ifmo.ctddev.games.messages.DigResponseMessage;
 import ru.ifmo.ctddev.games.messages.InventoryMessage;
 import ru.ifmo.ctddev.games.messages.JoinMessage;
 import ru.ifmo.ctddev.games.messages.MoveBroadcastMessage;
 import ru.ifmo.ctddev.games.messages.MoveMessage;
 import ru.ifmo.ctddev.games.messages.MoveResponseMessage;
+import ru.ifmo.ctddev.games.messages.SellItemMessage;
+import ru.ifmo.ctddev.games.messages.SellResponseMessage;
 import ru.ifmo.ctddev.games.messages.StartMessage;
 import ru.ifmo.ctddev.games.messages.StateMessage;
 import ru.ifmo.ctddev.games.messages.StoreMessage;
+import ru.ifmo.ctddev.games.messages.ThrowOutMessage;
+import ru.ifmo.ctddev.games.messages.ThrowOutResponseMessage;
 import ru.ifmo.ctddev.games.messages.UserDisjoinedBroadcastMessage;
 import ru.ifmo.ctddev.games.messages.UserJoinedBroadcastMessage;
 import ru.ifmo.ctddev.games.messages.UserVote;
@@ -345,6 +351,80 @@ public class ServerConnectionHandler extends Service {
         public void sendMoveRequest(int dx, int dy) {
             MoveMessage message = new MoveMessage(dx, dy);
             socket.emit("move_request", mapper.convertValue(message, JSONObject.class));
+        }
+
+        public class BuyItemTask extends Thread {
+            final String itemName;
+
+            public BuyItemTask(String itemName) {
+                this.itemName = itemName;
+            }
+
+            @Override
+            public void run() {
+                final InventoryItem item = GameDatabase.getStoreItemToBuy(ServerConnectionHandler.this, itemName);
+                BuyItemMessage message = new BuyItemMessage(item.getId(), 1);
+                socket.once("buy_response", new Emitter.Listener() {
+                    @Override
+                    public void call(Object... args) {
+                        final BuyResponseMessage response = mapper.convertValue(args[0], BuyResponseMessage.class);
+                        if (response.isSuccess()) {
+                            GameDatabase.addInvItem(ServerConnectionHandler.this, item);
+                            awaitForFieldAndRun(new Runnable() {
+                                @Override
+                                public void run() {
+                                    gameField.updateInfo(GameField.LOADER_INVENTORY);
+                                    gameField.updateState(response.getMoney(), null);
+                                }
+                            });
+                        }
+                    }
+                });
+                socket.emit("buy_item", mapper.convertValue(message, JSONObject.class));
+            }
+        }
+
+        public class SellItemTask extends Thread {
+            final String itemName;
+            final boolean sell;
+
+            public SellItemTask(String itemName, boolean sell) {
+                this.itemName = itemName;
+                this.sell = sell;
+            }
+
+            @Override
+            public void run() {
+                int itemId = GameDatabase.getInvItemId(ServerConnectionHandler.this, itemName);
+                socket.once(sell ? "sell_response" : "throw_out_response", new Emitter.Listener() {
+                    @Override
+                    public void call(Object... args) {
+                        if (sell) {
+                            final SellResponseMessage message = mapper.convertValue(args[0], SellResponseMessage.class);
+                            if (message.isSuccess()) {
+                                GameDatabase.removeInvItem(ServerConnectionHandler.this, itemName);
+                                awaitForFieldAndRun(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        gameField.updateState(message.getMoney(), null);
+                                        gameField.updateInfo(GameField.LOADER_INVENTORY);
+                                    }
+                                });
+                            }
+                        } else {
+                            ThrowOutResponseMessage message = mapper.convertValue(args[0], ThrowOutResponseMessage.class);
+                            if (message.isSuccess()) {
+                                GameDatabase.removeInvItem(ServerConnectionHandler.this, itemName);
+                                refreshGameField(GameField.LOADER_INVENTORY);
+                            }
+                        }
+                    }
+                });
+                JSONObject toSend = sell
+                        ? mapper.convertValue(new SellItemMessage(itemId, 1), JSONObject.class)
+                        : mapper.convertValue(new ThrowOutMessage(itemName, 1), JSONObject.class);
+                socket.emit(sell ? "sell_item" : "throw_out", toSend);
+            }
         }
 
         public void requestStore() {

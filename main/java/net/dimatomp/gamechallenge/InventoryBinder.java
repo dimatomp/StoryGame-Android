@@ -7,6 +7,9 @@ import android.widget.ImageView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_COST;
 import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_COUNT;
 import static net.dimatomp.gamechallenge.GameDatabaseColumns.ITEM_NAME;
@@ -33,6 +36,12 @@ public class InventoryBinder implements SimpleCursorAdapter.ViewBinder {
         this.sellAvailable = canSell;
     }
 
+    private Set<View> buttons = new HashSet<>();
+
+    public boolean isInventoryButton(View view) {
+        return buttons.contains(view);
+    }
+
     @Override
     public boolean setViewValue(View view, Cursor cursor, int columnIndex) {
         switch (cursor.getColumnName(columnIndex)) {
@@ -47,14 +56,14 @@ public class InventoryBinder implements SimpleCursorAdapter.ViewBinder {
                             resources.getString(itemTypeRes[cursor.getInt(columnIndex)]));
                 break;
             case ITEM_COUNT:
-                ((TextView) view).setText(String.format(
-                        resources.getString(R.string.inventory_quantity),
-                        cursor.getInt(columnIndex)));
+                int value = cursor.getInt(columnIndex);
+                ((TextView) view).setText(value > 1 ? String.format(resources.getString(R.string.inventory_quantity), value) : null);
                 break;
             case ITEM_COST:
                 ((TextView) view).setText(sellAvailable ? String.format(
                         resources.getString(R.string.inventory_sell),
                         cursor.getInt(columnIndex)) : null);
+                buttons.add((View) view.getParent());
                 break;
         }
         return true;

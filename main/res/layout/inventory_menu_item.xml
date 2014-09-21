@@ -36,6 +36,7 @@
         android:layout_height="match_parent"
         android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
+        android:onClick="buySellThrow"
         android:id="@+id/buy_sell_button"
         android:background="@drawable/sell_throwout_button"
         android:foregroundGravity="center"

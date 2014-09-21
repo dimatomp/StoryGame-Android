@@ -16,6 +16,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.CursorAdapter;
 import android.widget.ImageView;
@@ -472,7 +473,7 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                         }
                         runnable.run();
                     }
-                }).run();
+                }).start();
             else
                 runnable.run();
         }
@@ -524,10 +525,37 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
             });
         }
 
+        public void sendBuyQuery(final String itemName) {
+            runWhenConnected(new Runnable() {
+                @Override
+                public void run() {
+                    service.new BuyItemTask(itemName).start();
+                }
+            });
+        }
+
+        public void sendSellThrowQuery(final String itemName, final boolean sell) {
+            runWhenConnected(new Runnable() {
+                @Override
+                public void run() {
+                    service.new SellItemTask(itemName, sell).start();
+                }
+            });
+        }
+
         @Override
         public void onServiceDisconnected(ComponentName name) {
             Log.d(TAG, "Service disconnected");
             service.setGameField(null);
+        }
+    }
+
+    public void buySellThrow(View view) {
+        ViewGroup item = (ViewGroup) view.getParent();
+        if (inventoryBinder.isInventoryButton(view)) {
+            connection.sendSellThrowQuery(((TextView) item.findViewById(R.id.item_name)).getText().toString(), inventoryBinder.isSellAvailable());
+        } else {
+            connection.sendBuyQuery(((TextView) item.findViewById(R.id.item_name)).getText().toString());
         }
     }
 }

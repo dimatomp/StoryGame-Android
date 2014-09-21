@@ -76,6 +76,7 @@ public class GameDatabase extends SQLiteOpenHelper {
         SQLiteDatabase db = getInstance(context).getWritableDatabase();
         ContentValues values = new ContentValues();
         if (!alreadyExists) {
+            values.put(_ID, item.getId());
             values.put(ITEM_NAME, item.getName());
             values.put(ITEM_TYPE, item.getType());
             values.put(ITEM_COST, item.getCostSell());
@@ -88,9 +89,30 @@ public class GameDatabase extends SQLiteOpenHelper {
         }
     }
 
+    public static int getInvItemId(Context context, String itemName) {
+        Cursor findId = getInstance(context).getReadableDatabase().query(INVENTORY_TABLE, new String[]{_ID}, ITEM_NAME + " = '" + itemName + "'", null, null, null, null);
+        findId.moveToFirst();
+        return findId.getInt(findId.getColumnIndex(_ID));
+    }
+
+    public static void removeInvItem(Context context, String itemName) {
+        SQLiteDatabase db = getInstance(context).getReadableDatabase();
+        Cursor findId = db.query(INVENTORY_TABLE, new String[]{ITEM_COUNT}, ITEM_NAME + " = '" + itemName + "'", null, null, null, null);
+        findId.moveToFirst();
+        db = getInstance(context).getWritableDatabase();
+        int itemCount = findId.getInt(findId.getColumnIndex(ITEM_COUNT));
+        if (findId.getInt(findId.getColumnIndex(ITEM_COUNT)) > 1) {
+            ContentValues values = new ContentValues();
+            values.put(ITEM_COUNT, itemCount - 1);
+            db.update(INVENTORY_TABLE, values, ITEM_NAME + " = '" + itemName + "'", null);
+        } else
+            db.delete(INVENTORY_TABLE, ITEM_NAME + " = '" + itemName + "'", null);
+    }
+
     public static void addStoreItem(Context context, Item item) {
         SQLiteDatabase db = getInstance(context).getWritableDatabase();
         ContentValues values = new ContentValues();
+        values.put(_ID, item.getId());
         values.put(GOODS_NAME, item.getName());
         values.put(GOODS_TYPE, item.getType());
         values.put(GOODS_COST_BUY, item.getCostBuy());
@@ -162,6 +184,15 @@ public class GameDatabase extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.execSQL("DELETE TABLE IF EXISTS " + POLLS_TABLE + ";");
         db.execSQL("DELETE TABLE IF EXISTS " + VOTE_OPTIONS + ";");
+    }
+
+    public static InventoryItem getStoreItemToBuy(Context context, String name) {
+        Cursor findId = getInstance(context).getReadableDatabase().query(STORE_TABLE, STORE_COLUMNS, GOODS_NAME + " = '" + name + "'", null, null, null, null);
+        findId.moveToFirst();
+        return new InventoryItem(
+                findId.getInt(findId.getColumnIndex(_ID)),
+                name, findId.getInt(findId.getColumnIndex(GOODS_COST_SELL)),
+                findId.getInt(findId.getColumnIndex(GOODS_TYPE)), 1);
     }
 
     @Override
