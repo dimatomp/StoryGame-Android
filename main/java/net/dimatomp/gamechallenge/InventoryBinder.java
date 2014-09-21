@@ -23,6 +23,7 @@ public class InventoryBinder implements SimpleCursorAdapter.ViewBinder {
     private static final int iconResources[] = new int[]{R.drawable.sword, R.drawable.potion, R.drawable.ore};
     private Resources resources;
     private boolean sellAvailable;
+    private Set<View> buttons = new HashSet<>();
 
     public InventoryBinder(Resources resources) {
         this.resources = resources;
@@ -35,8 +36,6 @@ public class InventoryBinder implements SimpleCursorAdapter.ViewBinder {
     public void setSellAvailable(boolean canSell) {
         this.sellAvailable = canSell;
     }
-
-    private Set<View> buttons = new HashSet<>();
 
     public boolean isInventoryButton(View view) {
         return buttons.contains(view);

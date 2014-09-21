@@ -353,6 +353,26 @@ public class ServerConnectionHandler extends Service {
             socket.emit("move_request", mapper.convertValue(message, JSONObject.class));
         }
 
+        public void requestStore() {
+            socket.emit("get_store");
+        }
+
+        public void sendDigEvent() {
+            socket.emit("dig");
+        }
+
+        public void requestUserInfo() {
+            socket.emit("get_state");
+        }
+
+        public void logOut() {
+            socket.disconnect();
+        }
+
+        public StartMessage getStartInfo() {
+            return startInfo;
+        }
+
         public class BuyItemTask extends Thread {
             final String itemName;
 
@@ -420,31 +440,11 @@ public class ServerConnectionHandler extends Service {
                         }
                     }
                 });
-                JSONObject toSend = sell
-                        ? mapper.convertValue(new SellItemMessage(itemId, 1), JSONObject.class)
-                        : mapper.convertValue(new ThrowOutMessage(itemName, 1), JSONObject.class);
+                JSONObject toSend = mapper.convertValue(sell
+                        ? new SellItemMessage(itemId, 1)
+                        : new ThrowOutMessage(itemName, 1), JSONObject.class);
                 socket.emit(sell ? "sell_item" : "throw_out", toSend);
             }
-        }
-
-        public void requestStore() {
-            socket.emit("get_store");
-        }
-
-        public void sendDigEvent() {
-            socket.emit("dig");
-        }
-
-        public void requestUserInfo() {
-            socket.emit("get_state");
-        }
-
-        public void logOut() {
-            socket.disconnect();
-        }
-
-        public StartMessage getStartInfo() {
-            return startInfo;
         }
     }
 }
@@ -452,8 +452,5 @@ public class ServerConnectionHandler extends Service {
 /*
  * What remains:
  *  - tech tree
- *  - throw out objects
- *  - sell objects
- *  - buy objects
  *  - graphics?
  */

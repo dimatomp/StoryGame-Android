@@ -180,12 +180,6 @@ public class GameDatabase extends SQLiteOpenHelper {
         db.update(VOTE_OPTIONS, values, POLL_NAME + " = '" + pollName + "'", null);
     }
 
-    @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DELETE TABLE IF EXISTS " + POLLS_TABLE + ";");
-        db.execSQL("DELETE TABLE IF EXISTS " + VOTE_OPTIONS + ";");
-    }
-
     public static InventoryItem getStoreItemToBuy(Context context, String name) {
         Cursor findId = getInstance(context).getReadableDatabase().query(STORE_TABLE, STORE_COLUMNS, GOODS_NAME + " = '" + name + "'", null, null, null, null);
         findId.moveToFirst();
@@ -193,6 +187,12 @@ public class GameDatabase extends SQLiteOpenHelper {
                 findId.getInt(findId.getColumnIndex(_ID)),
                 name, findId.getInt(findId.getColumnIndex(GOODS_COST_SELL)),
                 findId.getInt(findId.getColumnIndex(GOODS_TYPE)), 1);
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        db.execSQL("DELETE TABLE IF EXISTS " + POLLS_TABLE + ";");
+        db.execSQL("DELETE TABLE IF EXISTS " + VOTE_OPTIONS + ";");
     }
 
     @Override

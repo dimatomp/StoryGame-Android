@@ -345,6 +345,15 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         connection.sendDigEvent();
     }
 
+    public void buySellThrow(View view) {
+        ViewGroup item = (ViewGroup) view.getParent();
+        if (inventoryBinder.isInventoryButton(view)) {
+            connection.sendSellThrowQuery(((TextView) item.findViewById(R.id.item_name)).getText().toString(), inventoryBinder.isSellAvailable());
+        } else {
+            connection.sendBuyQuery(((TextView) item.findViewById(R.id.item_name)).getText().toString());
+        }
+    }
+
     public enum MoveDirection {
         RIGHT(1, 0), DOWN(0, 1), LEFT(-1, 0), UP(0, -1);
 
@@ -547,15 +556,6 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         public void onServiceDisconnected(ComponentName name) {
             Log.d(TAG, "Service disconnected");
             service.setGameField(null);
-        }
-    }
-
-    public void buySellThrow(View view) {
-        ViewGroup item = (ViewGroup) view.getParent();
-        if (inventoryBinder.isInventoryButton(view)) {
-            connection.sendSellThrowQuery(((TextView) item.findViewById(R.id.item_name)).getText().toString(), inventoryBinder.isSellAvailable());
-        } else {
-            connection.sendBuyQuery(((TextView) item.findViewById(R.id.item_name)).getText().toString());
         }
     }
 }

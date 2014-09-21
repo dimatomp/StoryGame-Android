@@ -41,7 +41,7 @@ public class FieldView extends View {
     int sideLength;
     RectF rectUp, rectLeft, rectRight, rectDown, rectDig;
     Paint arrowPaint;
-    Paint textPaint = new Paint();
+    Paint textPaint;
     LevelListDrawable portraitArrow;
     BitmapDrawable landscapeArrowPad;
     private int[][] field;
@@ -79,6 +79,9 @@ public class FieldView extends View {
         arrowPaint.setColor(Color.RED);
         arrowPaint.setStrokeWidth(getResources().getDimension(R.dimen.circle_thickness));
         arrowPaint.setAntiAlias(true);
+        textPaint = new Paint();
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setTextSize(20);
         longPressDetector = new GestureDetector(getContext(), new OnLongPressListener());
         players = new HashMap<>();
     }
@@ -384,7 +387,7 @@ public class FieldView extends View {
                     int screenX = sideLength * (entry.getValue().x - myCrd.x + field.length / 2);
                     int screenY = sideLength * (entry.getValue().y - myCrd.y + field[0].length / 2);
                     canvas.drawBitmap(player, screenY, screenX, null);
-                    canvas.drawText(entry.getKey(), screenY, screenX, textPaint);
+                    canvas.drawText(entry.getKey(), screenY + sideLength / 2, screenX, textPaint);
                 }
             canvas.restore();
         }
