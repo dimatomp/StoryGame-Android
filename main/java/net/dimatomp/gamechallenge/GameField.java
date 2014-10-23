@@ -28,6 +28,7 @@ import android.widget.TabWidget;
 import android.widget.TextView;
 
 import ru.ifmo.ctddev.games.messages.MoveResponseMessage;
+import ru.ifmo.ctddev.games.messages.TreeMessage;
 
 import static net.dimatomp.gamechallenge.GameDatabaseColumns.CHOSEN;
 import static net.dimatomp.gamechallenge.GameDatabaseColumns.GOODS_COST_BUY;
@@ -86,6 +87,11 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
                 getResources().getDrawable(R.drawable.ic_action_paste));
         childView.setContent(R.id.storeTab);
         host.addTab(childView);
+        childView = host.newTabSpec("techTreeView");
+        createIndicator(host, childView, getString(R.string.tab_tech_tree),
+                getResources().getDrawable(android.R.drawable.ic_menu_share));
+        childView.setContent(R.id.techTreeTab);
+        host.addTab(childView);
         childView = host.newTabSpec("statusView");
         createIndicator(host, childView, getString(R.string.tab_status),
                 getResources().getDrawable(android.R.drawable.ic_dialog_info));
@@ -119,6 +125,10 @@ public class GameField extends Activity implements AdapterView.OnItemClickListen
         ImageView iconView = (ImageView) result.findViewById(R.id.icon);
         iconView.setImageDrawable(icon);
         childView.setIndicator(result);
+    }
+
+    public void setTree(TreeMessage tree) {
+        ((TechTreeView) findViewById(R.id.techTreeTab)).setTree(tree);
     }
 
     private void setupVotesList() {

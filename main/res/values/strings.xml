@@ -16,6 +16,7 @@
     <string name="tab_polls">Polls</string>
     <string name="tab_status">Status</string>
     <string name="tab_store">Store</string>
+    <string name="tab_tech_tree">Tech Tree</string>
     <string name="logout_button">Logout</string>
 
     <string name="vote_dialog_title">Contribute into&#8230;</string>

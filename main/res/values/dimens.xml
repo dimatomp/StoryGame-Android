@@ -6,4 +6,6 @@
     <dimen name="portrait_finger_move_delta">28dip</dimen>
     <dimen name="circle_thickness">3dip</dimen>
     <dimen name="landscape_button_size">48dip</dimen>
+    <dimen name="tree_node_width">30dip</dimen>
+    <dimen name="tree_node_height">6dip</dimen>
 </resources>

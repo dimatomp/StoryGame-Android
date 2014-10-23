@@ -34,6 +34,7 @@ import ru.ifmo.ctddev.games.messages.StateMessage;
 import ru.ifmo.ctddev.games.messages.StoreMessage;
 import ru.ifmo.ctddev.games.messages.ThrowOutMessage;
 import ru.ifmo.ctddev.games.messages.ThrowOutResponseMessage;
+import ru.ifmo.ctddev.games.messages.TreeMessage;
 import ru.ifmo.ctddev.games.messages.UserDisjoinedBroadcastMessage;
 import ru.ifmo.ctddev.games.messages.UserJoinedBroadcastMessage;
 import ru.ifmo.ctddev.games.messages.UserVote;
@@ -165,6 +166,7 @@ public class ServerConnectionHandler extends Service {
                         socket.emit("vote_information");
                         socket.emit("get_inventory");
                         socket.emit("get_state");
+                        socket.emit("get_tree");
                     } else {
                         connectionStatus = ConnectionStatus.FAILED_TO_JOIN;
                         showLoginErrorMessage(R.string.error_server_refused);
@@ -325,6 +327,17 @@ public class ServerConnectionHandler extends Service {
                         @Override
                         public void run() {
                             gameField.increaseEnergy(message.getValue());
+                        }
+                    });
+                }
+            }).on("tree", new Emitter.Listener() {
+                @Override
+                public void call(Object... args) {
+                    final TreeMessage message = mapper.convertValue(args[0], TreeMessage.class);
+                    awaitForFieldAndRun(new Runnable() {
+                        @Override
+                        public void run() {
+                            gameField.setTree(message);
                         }
                     });
                 }

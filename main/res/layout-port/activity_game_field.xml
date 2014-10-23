@@ -37,92 +37,98 @@
                 android:layout_height="match_parent" />
 
             <LinearLayout
+                android:id="@+id/storeTab"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:id="@+id/storeTab">
+                android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/store_not_available_text"
                     android:layout_width="match_parent"
                     android:layout_height="fill_parent"
                     android:gravity="center"
-                    android:id="@+id/store_not_available_text"
                     android:hint="@string/store_not_available"/>
 
                 <ListView
+                    android:id="@+id/storeList"
                     android:layout_width="match_parent"
-                    android:layout_height="fill_parent"
-                    android:id="@+id/storeList"/>
+                    android:layout_height="fill_parent" />
             </LinearLayout>
 
+            <net.dimatomp.gamechallenge.TechTreeView
+                android:id="@+id/techTreeTab"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
             <RelativeLayout
-                android:orientation="vertical" android:layout_width="match_parent"
+                android:id="@+id/statusView"
+                android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:id="@+id/statusView">
+                android:orientation="vertical">
 
                 <RelativeLayout
                     android:layout_width="wrap_content"
-                    android:layout_centerInParent="true"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true">
 
                     <TextView
+                        android:id="@+id/status_username_prefix"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceMedium"
                         android:text="@string/status_name"
-                        android:id="@+id/status_username_prefix" />
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceMedium"
                         android:id="@+id/status_username"
-                        android:textColor="@android:color/holo_red_dark"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:layout_alignBottom="@+id/status_username_prefix"
-                        android:layout_toEndOf="@+id/status_username_prefix" />
+                        android:layout_toEndOf="@+id/status_username_prefix"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:textColor="@android:color/holo_red_dark" />
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceMedium"
-                        android:text="@string/status_money"
                         android:id="@+id/status_money_prefix"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignEnd="@id/status_username_prefix"
                         android:layout_below="@+id/status_username_prefix"
-                        android:layout_alignEnd="@id/status_username_prefix" />
+                        android:text="@string/status_money"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceMedium"
-                        android:textColor="#ffcc00"
                         android:id="@+id/status_money"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:layout_alignBottom="@id/status_money_prefix"
-                        android:layout_toEndOf="@id/status_money_prefix" />
+                        android:layout_toEndOf="@id/status_money_prefix"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:textColor="#ffcc00" />
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceMedium"
-                        android:text="@string/status_energy"
                         android:id="@+id/status_energy_prefix"
-                        android:layout_below="@id/status_money_prefix"
-                        android:layout_alignEnd="@id/status_money_prefix" />
-
-                    <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceMedium"
-                        android:textColor="@android:color/holo_blue_bright"
+                        android:layout_alignEnd="@id/status_money_prefix"
+                        android:layout_below="@id/status_money_prefix"
+                        android:text="@string/status_energy"
+                        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+                    <TextView
                         android:id="@+id/status_energy"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:layout_alignBottom="@id/status_energy_prefix"
-                        android:layout_toEndOf="@id/status_energy_prefix" />
+                        android:layout_toEndOf="@id/status_energy_prefix"
+                        android:textAppearance="?android:attr/textAppearanceMedium"
+                        android:textColor="@android:color/holo_blue_bright" />
                 </RelativeLayout>
 
                 <Button
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:onClick="finish"
                     android:layout_alignParentBottom="true"
+                    android:onClick="finish"
                     android:text="@string/logout_button" />
             </RelativeLayout>
         </FrameLayout>
